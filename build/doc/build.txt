@@ -1,3 +1,8 @@
+WARNING : 
+This file is obsolete and won't be updated anymore
+See README.md for the new version
+
+
 The build module is a build system lib in python for c and cpp project.
 Its really simply to use.
 
@@ -57,7 +62,7 @@ If you have installed a lib managed by pck-onfig
 you can use : 
 # prj.addInstalledLibrary("libname")
 
-THis will add the good includes, flags and libraries from pck-config
+This will add the good includes, flags and libraries from pck-config
 
 You can force your executable to be completly independant making the std C and C++ lib static as well:
 # prj.static = True
@@ -70,11 +75,8 @@ A compile_commands.json file will be exported in the parent dir of your current 
 If you don't want it, simply : 
 # prj.export_compile_commands = False
 
-to create a chared library instead of an executable file, you just need to put the shared attribute to True like this : 
+To create a shared library instead of an executable file, you just need to put the shared attribute to True like this : 
 # prj.shared = True
-
-For now the build system can only build executable files.
-The building of static and shared libraries will be implemented in the future.
 
 If you want to clean all .o files and cache files, you can do :
 # prj.clean()
