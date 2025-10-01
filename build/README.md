@@ -3,7 +3,7 @@
 ## Build Module Documentation (fxmake)
 
 The **build module** (fxmake) is a Python library that provides a simple build system for **C** and **C++** projects.  
-It’s designed to be easy to use.
+It’s been created to be easy to use. (and because I *hate* `CMake`)
 
 ## Installation 
 
