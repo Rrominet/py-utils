@@ -5,14 +5,18 @@
 Just run the `install` script as `sudo` in the root directory of the project.  
 For your convinience, use the code below to download this git repo, and install it on your system automaticly : 
 
+If you don't have python3 installed on your system for any reason : 
 ```bash 
-#If you don't have python3 installed on your system for any reason
 sudo apt install python3 # << or equivalent for your distro
+```
 
+```bash
 git clone https://github.com/Rrominet/py-utils.git
-cd py-utils
+cd ./py-utils
 sudo chmod +x ./install
 sudo ./install
+cd ..
+rm -rf ./py-utils #remove the git repo, not needed once it's installed. But you can keep it you want.
 ```
 You should be good to go.
 
