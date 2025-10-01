@@ -31,7 +31,7 @@ If you want to uninstall it simply run the `uninstall` script with `sudo`.
 ## Usage
 
 For now, this repo is not meant to be used alone (that being said, you can if you want - more on that later).  
-It's a dependencies for my others projects in python that will download and install this repo automaticly if needed.
+It's a dependency for my others projects in python that will download and install this repo automaticly if needed.
 
 If you still want to use it as a standalone module, this one is called `ml`.
 So in your python script/program just write : 
