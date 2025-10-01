@@ -1,0 +1,12 @@
+if [ -z $1 ]
+then 
+    echo "Compiling in debug mode..."
+    cmake -D CMAKE_BUILD_TYPE=Debug -D CMAKE_C_COMPILER=gcc -D CMAKE_CXX_COMPILER=g++ ..
+    make -j20
+    rm ../compile_commands.json
+    mv ./compile_commands.json ../compile_commands.json
+else
+    echo "Compiling in release mode..."
+    cmake -D CMAKE_BUILD_TYPE=Release -D CMAKE_C_COMPILER=gcc -D CMAKE_CXX_COMPILER=g++ ..
+    make -j20
+fi

@@ -1,0 +1,36 @@
+This is a document that details the commands from the boilerplate lib accessible in nvim.
+Let's start.
+
+
+BPHelp
+Open this file in the current buffer.
+
+
+BPHelpCompile
+Open the help for the compile mode of the tool boilerplate
+
+
+BPGenerateCpp
+Create the corresponding cpp file from the current buffer if its a .h file.
+
+
+BPCppImpl
+Copy in the clipboard (@+) register the implementation form of the selected function/method declaration.
+
+
+BPTemplate
+Create a new template project in the current folder. (need 2 arguments, the template name from the dir templatesand the name of the created file/dir)
+
+
+
+----------------------------------------------------
+
+
+How you can add you custom commands ? 
+You need to modify the file in ~/.config/nvim/rplugin/python3/boilerplate.py and add a method for each new command with this form : 
+
+    @pynvim.command('BPMyCommandName', nargs='*', range='')
+    def my_command(self, args, _range) : 
+        pass
+
+After you added a method, you need to force vim to update it with the commande :UpdateRemotePlugins

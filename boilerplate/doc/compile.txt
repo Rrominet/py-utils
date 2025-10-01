@@ -1,0 +1,31 @@
+This document explains how you con use the boilerplate python lib in the compilation process to generate code file based on simple rules.
+This is very useful for getter and setter and semi-automatic json serialization.
+
+Note : A list of the simplest examples could be retreive in the file cpp/test.py
+
+
+
+How does it works :
+
+The system is really simple, with simple comments in your code, the system will be able to know what to generate.
+
+The comments always starts with the sames chars : //bp
+add letters after to explain what, here are the bindings : 
+cg : const getter, g : getter 
+s : setter 
+x : serialize and deserialize
+l : consider the member as a list for the serialisation
+
+for example : 
+int _var //bp cgsxl
+
+
+The system will after create one or 2 files (based on your rules given) : 
+your_file_gen.h
+your_file_gen.cpp (if serialisation)
+
+
+you need to include "your_file_gen.h" in your .h file (in the public statement of your class, if you using a class)
+
+If a your_file.cpp has been generated, you need to add it to your build system.
+

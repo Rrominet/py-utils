@@ -1,0 +1,5 @@
+build/test
+boilerplate/cpp/test-project
+boilerplate/cpp/test.py
+boilerplate/cpp/help_regex.txt
+*__pycache__*

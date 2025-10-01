@@ -1,0 +1,91 @@
+The build module is a build system lib in python for c and cpp project.
+Its really simply to use.
+
+first you need import the module like this : 
+
+# from ml import build
+
+once done, you can use it to build your c/c++ project
+
+
+First thing to do is to create a Project instance with a name (it will be the name of your executable)
+# prj = build.create("executable_name")
+
+After, you can call the method "setFromArgs" of the prj instance that will argument called from your python file to automaticly set the debug or release build settings.
+
+You can also directly call : 
+# prj = build.create("executable_name", argv)
+
+Yoou can also directly choose your builder (that is g++ by default)
+# prj = build.create("executable_name", argv, "your-builder")
+
+Don't do prj.builder = "...", this will not work because some settings are setted directly in the create function.
+
+
+After you add your include dirs with 
+# prj.includes = ["dir1", "dir2", ...]
+
+You add your sources files (.c/.cpp) with : 
+If you put a dir, all the files in it will be added. You can specify the arg reccursive, to add all the files in the dir reccursivly
+# prj.addToSrcs(["file1.c", "file2.cpp", ...]) 
+
+You can after access to all the srcs with : (if you want to remove a specific file for example)
+# prj.srcs
+
+You can use the list srcs_exclude if you wantt to exclude certain files from srcs during compilation and linking process
+# prj.srcs_exclude.append("your-file-name.cpp")
+
+You can add compiler definitions with : 
+# prj.definitions += ["def1", "def2", ...]
+
+You can add compiler flags with :
+# prj.flags += ["-flag1", "flag2", ...] (no need to put the "-" in front of the flags, but if you do, no problem.)
+
+You can add static libraries (.a) with :
+# prj.addToLibs(["fullpath/to/lib1.a", "fullpath/to/lib2.a", ...])
+
+You can add shared libraries (.so) with :
+# prj.addToLibs(["name1", "name2", ...])
+You should remove .so extension and the lib at the beginning but if you don't, no problem.
+If the shared lib files are just the *.so.version files, at link time a symlink will be created like this ./yourfile.so -> ./yourfile.so.version. If the symlink already exists, nothing will be done.
+
+You can add dirs where to look for your libraries during linking AND runtime phase (rpath) with :
+# prj.addToLibDirs(["fullpath/to/dir1", "./libs/dir2", ...]) ("./" will be converted to "$ORIGIN/" at runtime in rpath)
+You can check you libs at runtime with the command : readelf -d "/your/binary"
+
+If you have installed a lib managed by pck-onfig
+you can use : 
+# prj.addInstalledLibrary("libname")
+
+THis will add the good includes, flags and libraries from pck-config
+
+You can force your executable to be completly independant making the std C and C++ lib static as well:
+# prj.static = True
+Careful, it could have a big impact on your binary size and certain function will not work properly because libc is not thinked to be static. But you can do it specialy if your host machine have an older version of libc.
+
+After this, your done with your configuration, you can now build your project :
+# prj.build()
+
+A compile_commands.json file will be exported in the parent dir of your current dir.
+If you don't want it, simply : 
+# prj.export_compile_commands = False
+
+to create a chared library instead of an executable file, you just need to put the shared attribute to True like this : 
+# prj.shared = True
+
+For now the build system can only build executable files.
+The building of static and shared libraries will be implemented in the future.
+
+If you want to clean all .o files and cache files, you can do :
+# prj.clean()
+
+A common practice is to do : 
+if "clean" in sys.argv or "clear" in sys.argv :
+    prj.clean() 
+else : 
+    prj.build()
+
+
+And that's it.
+
+For a complete working example, see the content of the test folder. (specially the make file.)

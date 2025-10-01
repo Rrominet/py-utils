@@ -1,0 +1,8 @@
+#!/bin/bash
+
+DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
+build=$DIR/build
+
+cp $build/your_ap_name /opt/your_app_name
+
+echo "Installation doned."
