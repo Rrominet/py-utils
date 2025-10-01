@@ -1,0 +1,15 @@
+#!python
+import os
+import subprocess
+import sys
+import shutil
+
+current = os.path.dirname(__file__)
+pyParent = os.path.dirname(sys.executable)
+pyv = str(sys.version_info.major) + "." + str(sys.version_info.minor)
+
+packagedDir = pyParent + "/../lib/python" + pyv + "/site-packages"
+
+print ("installing py-utils from fxos to " + packagedDir + " ... ")
+shutil.copytree(current, packagedDir + "/ml")
+print ("py-utils from fxos installed.")

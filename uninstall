@@ -1,0 +1,17 @@
+#!python
+import os
+import subprocess
+import sys
+import shutil
+
+current = os.path.dirname(__file__)
+pyParent = os.path.dirname(sys.executable)
+pyv = str(sys.version_info.major) + "." + str(sys.version_info.minor)
+
+installDir = pyParent + "/../lib/python" + pyv + "/site-packages/ml"
+
+if not os.path.exists(installDir) : 
+    print ("py-utils not installed.")
+else : 
+    shutil.rmtree(installDir)
+    print ("py-utils uninstalled.")
