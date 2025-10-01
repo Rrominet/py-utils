@@ -1,13 +1,9 @@
-#!python
+#!/usr/bin/python3
 import os
-import subprocess
-import sys
 import shutil
+import site
 
-current = os.path.dirname(__file__)
-pyParent = os.path.dirname(sys.executable)
-pyv = str(sys.version_info.major) 
-installDir = pyParent + "/../lib/python" + pyv + "/dist-packages/ml"
+installDir = site.getsitepackages()[0]+ "/ml"
 
 if not os.path.exists(installDir) : 
     print ("py-utils not installed.")

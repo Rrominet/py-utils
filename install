@@ -1,20 +1,16 @@
 #!/usr/bin/python3
 import os
-import subprocess
-import sys
 import shutil
+import site
 
 current = os.path.dirname(__file__)
-pyParent = os.path.dirname(sys.executable)
-pyv = str(sys.version_info.major)
+packagesDir = site.getsitepackages()[0]
 
-packagedDir = pyParent + "/../lib/python" + pyv + "/dsit-packages"
+print ("installing py-utils from fxos to " + packagesDir + " ... ")
 
-print ("installing py-utils from fxos to " + packagedDir + " ... ")
-
-if os.path.exists(packagedDir + "/ml"): 
+if os.path.exists(packagesDir + "/ml"): 
     print ("old version of py-utils found. Removing it.")
-    shutil.rmtree(packagedDir + "/ml")
+    shutil.rmtree(packagesDir + "/ml")
 
-shutil.copytree(current, packagedDir + "/ml")
+shutil.copytree(current, packagesDir + "/ml")
 print ("py-utils from fxos installed.")
