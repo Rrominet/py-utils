@@ -206,5 +206,5 @@ else:
 
 ## Example
 
-For a complete working example, see the [examples](https://github.com/Rrominet/py-utils/tree/master/examples) folder (especially the script files `make`).
+For a complete working example, see the [examples](https://github.com/Rrominet/py-utils/tree/main/build/examples) folder (especially the script files `make`).
 
