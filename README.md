@@ -1,5 +1,11 @@
 # py-utils
 
+## Subprojects :
+
+This repo contains the following subprojects :
+ - [fxmake](https://github.com/Rrominet/py-utils/tree/main/build)
+ - [boilerplate](https://github.com/Rrominet/py-utils/tree/main/boilerplate)
+
 ## Installation
 
 Just run the `install` script as `sudo` in the root directory of the project.  
