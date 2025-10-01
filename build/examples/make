@@ -1,0 +1,53 @@
+#!/usr/bin/env python3
+from ml import build
+import sys
+
+prj = build.create("test", sys.argv)
+fm = "/media/romain/Donnees/Programmation/cpp/frameworks"
+libs = "/media/romain/Donnees/Programmation/C++/libs"
+prj.includes = [fm,
+                fm + "/files",
+                libs + "/sha3",
+                libs + "/json",
+                libs + "/boost-install/include",
+                libs + "/eigen",
+                ]
+
+srcs = [
+        "/media/romain/Donnees/Programmation/C++/libs/sha3/sha3.c",
+        fm + "/hash.cpp",
+        fm + "/debug.cpp",
+        fm + "/str.cpp",
+        fm + "/vec.cpp",
+        fm + "/random.cpp",
+        fm + "/Perfs.cpp",
+        fm + "/files/File.cpp",
+        fm + "/files/Dir.cpp",
+        fm + "/mlTime.cpp",
+        fm + "/base64.cpp",
+        fm + "/thread.cpp",
+        fm + "/os.cpp",
+        fm + "/json.cpp",
+        fm + "/Events.cpp",
+        fm + "/CmdPgr.cpp",
+        fm + "/mlprocess.cpp",
+        fm + "/network/TcpClient.cpp",
+        "../cpp_srcs",
+        ]
+prj.addToSrcs(srcs)
+
+prj.definitions.append("def1")
+prj.addToLibDirs("./lib")
+prj.addToLibs([
+        "pthread", 
+        libs + "/boost-install/lib/libboost_filesystem.a",
+        ])
+
+prj.static = True
+
+if "clean" in sys.argv or "clear" in sys.argv :
+    prj.clean() 
+elif "install" in sys.argv :
+    prj.install()
+else : 
+    prj.build()
