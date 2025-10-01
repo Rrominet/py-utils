@@ -379,7 +379,7 @@ class Project :
         current = os.path.getsize(src)
         cmd = [self.builder, "-MM", src]
         cmd.extend(self.listAsArgs(self.includes, "-I"))
-        ret = subprocess.run(cmd, capture_output=True)
+        ret = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         headers = ret.stdout.decode("utf-8").split("\\\n")
         headers = headers[1:]
         headers = headers[:-1]
@@ -456,7 +456,7 @@ class Project :
 
 
         cmd = ["pkg-config", "--cflags", libname]
-        ret = subprocess.run(cmd, capture_output=True)
+        ret = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         _flags = ret.stdout.decode("utf-8")
 
         for f in _flags.split(" ") : 
@@ -466,7 +466,7 @@ class Project :
                 flags.append(f)
 
         cmd = ["pkg-config", "--libs", libname]
-        ret = subprocess.run(cmd, capture_output=True)
+        ret = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         _libs = ret.stdout.decode("utf-8")
 
         for l in _libs.split(" ") :
