@@ -2,16 +2,12 @@
 
 ## Build Module Documentation (fxmake)
 
-The **build module** (fxmake) is a Python library that provides a simple build system for **C** and **C++** projects.
+The **build module** (fxmake) is a Python library that provides a simple build system for **C** and **C++** projects.  
 It’s designed to be easy to use.
-
----
 
 ## Installation 
 
 See the installation process in the parent repo `py-utils` [here](https://github.com/Rrominet/py-utils)
-
----
 
 ## Getting Started
 
@@ -28,8 +24,6 @@ prj = build.create("executable_name")
 ```
 
 The name you pass will be the name of your executable.
-
----
 
 ## Build Configuration
 
@@ -66,8 +60,6 @@ prj.builder = "..."
 
 This will not work, because some settings are initialized inside `create`.
 
----
-
 ## Project Setup
 
 ### Includes
@@ -101,8 +93,6 @@ Exclude files during compilation/linking:
 prj.srcs_exclude.append("your-file-name.cpp")
 ```
 
----
-
 ### Compiler options
 
 Add compiler definitions:
@@ -118,8 +108,6 @@ prj.flags += ["O3", "Wall", ...]
 ```
 
 (`-` prefix is optional, it will be handled.)
-
----
 
 ### Libraries
 
@@ -153,8 +141,6 @@ prj.addToLibDirs(["/full/path/dir1", "./libs/dir2", ...])
 readelf -d ./your_binary
 ```
 
----
-
 ### Installed libraries (pkg-config)
 
 If a library is installed system-wide and managed by `pkg-config`:
@@ -164,8 +150,6 @@ prj.addInstalledLibrary("libname")
 ```
 
 This automatically adds the correct includes, flags, and libs.
-
----
 
 ### Static executables
 
@@ -180,8 +164,6 @@ It’s useful mainly when targeting systems with older `libc`.
 > [!WARNING]
 > This increases binary size and may break some functions, since `libc` was not designed for static linking.  
 
----
-
 ## Building
 
 Build your project:
@@ -190,14 +172,12 @@ Build your project:
 prj.build()
 ```
 
-By default, a `compile_commands.json` file is exported in the parent directory.
+By default, a `compile_commands.json` file is exported in the parent directory.  
 Disable it if you don’t need it:
 
 ```python
 prj.export_compile_commands = False
 ```
-
----
 
 ## Shared Libraries
 
@@ -206,8 +186,6 @@ To create a **shared library** instead of an executable:
 ```python
 prj.shared = True
 ```
-
----
 
 ## Cleaning
 
@@ -226,9 +204,7 @@ else:
     prj.build()
 ```
 
----
-
 ## Example
 
-For a complete working example, see the `examples` folder (especially the script file `make`).
+For a complete working example, see the `examples` folder (especially the script files `make`).
 
