@@ -1,16 +1,20 @@
-#!/usr/bin/python3
-import os
-import shutil
-import site
+#!/usr/bin/env python3
+import os, shutil, site
 
-current = os.path.dirname(__file__)
-packagesDir = site.getsitepackages()[0]
+current = os.path.dirname(os.path.abspath(__file__))
 
-print ("installing py-utils from fxos to " + packagesDir + " ... ")
+try:
+    packagesDir = site.getsitepackages()[0]
+except AttributeError:
+    packagesDir = site.getusersitepackages()
 
-if os.path.exists(packagesDir + "/ml"): 
-    print ("old version of py-utils found. Removing it.")
-    shutil.rmtree(packagesDir + "/ml")
+print(f"installing py-utils from fxos to {packagesDir} ...")
 
-shutil.copytree(current, packagesDir + "/ml")
-print ("py-utils from fxos installed.")
+target = os.path.join(packagesDir, "ml")
+
+if os.path.exists(target):
+    print("old version of py-utils found. Removing it.")
+    shutil.rmtree(target)
+
+shutil.copytree(current, target)
+print("py-utils from fxos installed.")

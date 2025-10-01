@@ -1,9 +1,14 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 import os
 import shutil
 import site
 
-installDir = site.getsitepackages()[0]+ "/ml"
+try:
+    packagesDir = site.getsitepackages()[0]
+except AttributeError:
+    packagesDir = site.getusersitepackages()
+
+installDir = packagesDir + "/ml"
 
 if not os.path.exists(installDir) : 
     print ("py-utils not installed.")
