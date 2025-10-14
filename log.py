@@ -86,7 +86,8 @@ colors = {
         "blue" : "\u001b[34m",
         "purple" : "\u001b[35m",
         "cyan" : "\u001b[36m",
-        "white" : "\u001b[37m"
+        "white" : "\u001b[37m",
+        "grey" : "\u001b[33m"
         }
 
 # this will always print regardless of the environment variable
