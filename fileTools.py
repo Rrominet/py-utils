@@ -254,7 +254,7 @@ def findFile(root, filename):
                 return file
     return file
 
-#return the naes, not the full path
+#return the names, not the full path
 def findInDir(dir, extension) : 
     _r = []
     for f in os.listdir(dir) : 
@@ -262,6 +262,34 @@ def findInDir(dir, extension) :
             _r.append(f)
 
     return _r
+
+def byExtensions(directory, extensions):
+    """
+    Get all files in a directory recursively that match given extensions.
+    
+    Args:
+        directory: Root directory to search
+        extensions: List of extensions (e.g., ['.py', '.txt']) or single extension as string
+    
+    Returns:
+        List of full file paths
+    """
+    
+    # Handle single extension as string
+    if isinstance(extensions, str):
+        extensions = [extensions]
+    
+    # Normalize extensions to have dots
+    extensions = [ext if ext.startswith('.') else f'.{ext}' for ext in extensions]
+    
+    matching_files = []
+    
+    for root, dirs, files in os.walk(directory):
+        for file in files:
+            if any(file.endswith(ext) for ext in extensions):
+                matching_files.append(os.path.join(root, file))
+    
+    return matching_files
 
 
 def removeOldestFiles(directory, max_files=100):
