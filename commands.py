@@ -3,7 +3,7 @@ class Command:
     def __init__(self, id, name="", description=""):
         self.id = id
         self.name = name
-        self.description = None
+        self.description = description
         self.args = {}
 
         # a function that takes the self.args as parameters
