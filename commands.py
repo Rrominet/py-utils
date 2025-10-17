@@ -32,5 +32,5 @@ class Commands :
             args = command.args
         return command.exec(args)
 
-    def has(id) : 
+    def has(self, id) : 
         return id in self.commands
