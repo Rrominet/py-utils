@@ -16,6 +16,7 @@ ERROR = 1
 class Project : 
     def __init__(self, name) : 
         self.name = name
+        self.version = "0.0.0"
         self.build_dir = os.getcwd()
         self.obj_dir = self.build_dir + os.sep + ".obj"
         self.cache_dir = self.build_dir + os.sep + ".cache"
@@ -304,6 +305,20 @@ class Project :
         f = open(self.cache_dir + os.sep + "settings", "w")
         f.write(self.currentSettings())
 
+    def lastVersion(self) : 
+        if os.path.exists(self.build_dir + os.sep + "version") :
+            self.version = ft.read(self.build_dir + os.sep + "version")
+        return self.version
+
+    def setVersion(self, version) : 
+        self.version = version
+        ft.write(self.version, self.build_dir + os.sep + "version")
+
+    def askVersion(self) : 
+        log.print ("Last version is " + self.lastVersion(), "yellow")
+        v = input("New version : ")
+        self.setVersion(v)
+
     def build(self) : 
         if self.state == ERROR :
             log.print("Cannot build " + self.name + " there was an error in configuration.", "red")
@@ -311,6 +326,8 @@ class Project :
 
         self.cleanIfNeeded()
         self.writeSettings()
+        if self.release : 
+            self.askVersion()
         try : 
             log.print("Start building " + self.name)
             self.compile()
