@@ -40,6 +40,7 @@ class Project :
         self.shared = False #True if you want to build as a shared lib and not as a programm
         self.useModules= False
         self.srcs_exclude = []
+        self.dependencies = {}
         self.release = False
 
     #type is debug or release
@@ -328,11 +329,16 @@ class Project :
         self.writeSettings()
         if self.release : 
             self.askVersion()
+            self.writeDependencies()
         try : 
             log.print("Start building " + self.name)
             self.compile()
             self.link()
-            self.makeExecutable(self.build_dir + os.sep + self.name)
+            try : 
+                self.makeExecutable(self.build_dir + os.sep + self.name)
+            except :
+                pass
+
             log.print("Done.\nExecutable is " + self.build_dir + os.sep + self.getFileName() + "\n", "green")
         except Exception as e : print(e)
 
@@ -365,6 +371,33 @@ class Project :
                 self.srcs.append(src)
             elif ft.ext(src) == "ixx" :
                 self.modules.append(src)
+
+    #call addToLibs inside but here the project is a dir with a lib.so and a version file
+    #it's for tracking dependencies versions
+    def addProject(self, proj) :
+        if type(proj) == list or type(proj) == tuple :
+            for s in proj :
+                self.addProject(s)
+            return
+        versionfp = proj + os.sep + "version"
+        if not os.path.exists(versionfp) :
+            log.print("No version file in " + proj, "red")
+            self.state = ERROR
+            return
+
+        version = ft.read(versionfp)
+        self.dependencies[proj] = version
+        for f in os.listdir(proj) :
+            if ft.ext(f) == "a" or ft.ext(f) == "lib"  or ft.ext(f) == "so" :
+                self.addToLibs(proj + os.sep + f)
+                return
+
+    def writeDependencies(self) :
+        if self.dependencies == {} :
+            log.print("No dependencies found.", "yellow")
+            return
+        depthfp = self.build_dir + os.sep + "dependencies"
+        ft.write(json.dumps(self.dependencies, indent=4), depthfp)
 
     def addToLibs(self, lib) : 
         if type(lib) == list or type(lib) == tuple :
