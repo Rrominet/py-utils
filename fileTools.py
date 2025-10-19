@@ -193,7 +193,7 @@ def hierarchie(root, includeDirs=True, filterDirs=[]):
     i = 0
     max = len(files)
     while i < max:
-        files[i] = root + "/" + files[i]
+        files[i] = root + os.sep + files[i]
         if os.path.isdir(files[i]):
             if os.path.basename(files[i]) not in filterDirs:
                 files += hierarchie(files[i], includeDirs, filterDirs)
