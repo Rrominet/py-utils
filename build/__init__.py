@@ -59,6 +59,8 @@ class Project :
             self.definitions.append("mydebug")
             self.definitions.append("mldebug")
             #self.flags.append("-fsanitize=address")
+        else : 
+            self.definitions.append("NDEBUG")
 
         if type == release and self.builder == "g++" :
             self.flags.append("O3")
