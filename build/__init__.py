@@ -13,9 +13,15 @@ release = 2
 OK = 0
 ERROR = 1
 
+KEEP_SAME = 1
+INCR_MINOR = 2
+INCR_MED = 3
+INCR_MAJOR = 4
+
 class Project : 
     def __init__(self, name) : 
         self.name = name
+        self.versionAction = None
         self.version = "0.0.0"
         self.build_dir = os.getcwd()
         self.obj_dir = self.build_dir + os.sep + ".obj"
@@ -73,6 +79,15 @@ class Project :
             self.release = True
         else : 
             self.setType(debug)
+
+        if "keep-same" in args : 
+            self.versionAction = KEEP_SAME
+        elif "incr-minor" in args : 
+            self.versionAction = INCR_MINOR
+        elif "incr-med" in args : 
+            self.versionAction = INCR_MED
+        elif "incr-major" in args : 
+            self.versionAction = INCR_MAJOR
 
     def obj(self, srcfilepath) : 
         return self.obj_dir + os.sep + os.path.basename(ft.noExt(srcfilepath)) + ".o"
@@ -322,6 +337,32 @@ class Project :
         v = input("New version : ")
         self.setVersion(v)
 
+    def updateVersion(self): 
+        last = self.lastVersion()
+        if self.versionAction == KEEP_SAME :
+            log.print("Keeping the last version : " + last, "yellow")
+            self.setVersion(last)
+            return
+        log.print ("Last version : " + last, "yellow")
+        last = last.split(".")
+        if self.versionAction == INCR_MINOR :
+            log.print ("Incrementing minor...")
+            minor = int(last[-1]) + 1
+            last[-1] = str(minor)
+        elif self.versionAction == INCR_MED :
+            log.print ("Incrementing medium...")
+            try : 
+                med = int(last[-2]) + 1
+                last[-2] = str(med)
+            except : 
+                last[-1] = str(int(last[-1]) + 1)
+        elif self.versionAction == INCR_MAJOR :
+            log.print ("Incrementing major...")
+            last[0] = str(int(last[0]) + 1)
+
+        log.print("New version : " + ".".join(last), "yellow")
+        self.setVersion(".".join(last))
+
     def build(self) : 
         if self.state == ERROR :
             log.print("Cannot build " + self.name + " there was an error in configuration.", "red")
@@ -330,7 +371,10 @@ class Project :
         self.cleanIfNeeded()
         self.writeSettings()
         if self.release : 
-            self.askVersion()
+            if self.versionAction == None :
+                self.askVersion()
+            else : 
+                self.updateVersion()
             self.writeDependencies()
         try : 
             log.print("Start building " + self.name)

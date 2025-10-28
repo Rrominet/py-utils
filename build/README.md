@@ -207,6 +207,44 @@ else:
     prj.build()
 ```
 
+### Versionning system
+
+The versioning system can be automaticly configured with the following arguments with calling `prj.setFromArgs`:
+```python
+if "keep-same" in args : 
+    self.versionAction = KEEP_SAME
+elif "incr-minor" in args : 
+    self.versionAction = INCR_MINOR
+elif "incr-med" in args : 
+    self.versionAction = INCR_MED
+elif "incr-major" in args : 
+    self.versionAction = INCR_MAJOR
+```
+
+The names are pretty straightforward.  
+The version is only updated in `release` build.  
+It's written in a `version` file next to the executable build.  
+
+If no argument given, the version will be asked to the user before the build.
+
+### Dependencies
+
+You can add dependencies to your project that have themselves `version` and dependencies with the function `prj.addProject`  
+As example : 
+
+```python
+prj.addProject([
+    "/opt/mlapi/lib",
+    "/opt/mlgui/lib",
+    ])
+```
+
+You only put the dir before the sharedlib file and its 2 files `version` and `dependencies`. 
+They should be at the same dir level.
+
+This will create a `dependencies` file and a `version` file in the current dir when release build.  
+This way, you can track wich version was what when you build.
+
 ## Example
 
 For a complete working example, see the [examples](https://github.com/Rrominet/py-utils/tree/main/build/examples) folder (especially the script files `make`).
