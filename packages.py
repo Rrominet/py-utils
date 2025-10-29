@@ -13,6 +13,8 @@ managers = {
         'emerge': 'gentoo',
     }
 
+
+
 packages_map = {
         "python3" : {
             "arch" : "python",
@@ -29,8 +31,46 @@ packages_map = {
         "python3-docstring-parser" : {
             "arch" : "python-docstring-parser",
             "gentoo" : "dev-python/docstring-parser",
+            },
+        "g++": {
+            "arch" : "gcc-c++",
+            "fedora" : "gcc-c++",
+            "redhat" : "gcc-c++",
+            "gentoo" : "gcc-c++",
+            "suse" : "gcc-c++"
+            },
+        "libboost-all-dev" : {
+            "fedora" : "boost-devel",
+            "redhat" : "boost-devel",
+            "arch" : "boost",
+            "suse": "boost-devel",
+            "gentoo": "dev-libs/boost"
+            },
+        "make" : {
+            "gentoo" : "dev-util/make",
+            },
+        "libc6-dev": {
+                "fedora" : "glibc-devel",
+                "redhat" : "glibc-devel",
+                "arch" : "glibc",
+                "suse" : "glibc-devel", 
+                "gentoo" : "dev-libs/glibc"
+                },
+        "libgtkmm-4.0-dev" : {
+                "fedora" : "gtkmm4.0-devel",
+                "redhat" : "gtkmm4.0-devel",
+                "arch" : "gtkmm4.0",
+                "suse" : "gtkmm4-devel",
+                "gentoo" : "dev-cpp/gtkmm"
+            },
+        "pkg-config" : {
+            "fedora" : "pkgconf",
+            "arch": "pkgconf",
+            "gentoo": "dev-util/pkgconfig",
             }
         }
+
+
 
 def detect() : 
     for manager, family in managers.items() : 
