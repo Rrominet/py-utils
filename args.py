@@ -14,10 +14,10 @@ def programName() :
     return _programName
 
 def containsDash(arg) :
-    return arg[0] == "-" or arg[:1] == "--"
+    return arg[0] == "-" or arg[:2] == "--"
 
 def dashRemoved(arg) : 
-    if arg[:1] == "--" :
+    if arg[:2] == "--" :
         return arg[2:]
     if arg[0] == "-" :
         return arg[1:]
