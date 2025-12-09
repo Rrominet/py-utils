@@ -2,15 +2,14 @@
 import os
 import heapq
 
-def writeInFile(pPath, content, mkDirs=True):
-    path = pPath.replace("\\", "/")
+def writeInFile(path, content, mkDirs=True):
     if mkDirs:
-        tmp = path.split("/")
+        tmp = path.split(os.sep)
         i = 0
         dirPath = ""
         for s in tmp:
             if i != len(tmp) - 1:
-                dirPath += "/" + s
+                dirPath += os.sep + s
             i += 1
 
         try:
@@ -22,7 +21,6 @@ def writeInFile(pPath, content, mkDirs=True):
     file = open(path, "w")
     res = file.write(content)
     file.close()
-
     return res
 
 
@@ -184,7 +182,7 @@ class File:
         else:
             return False
 
-
+#return reccurcive hierarchy of files as absolute path
 def hierarchie(root, includeDirs=True, filterDirs=[]):
     if root[-1] == "/":
         root = root[:-1]
