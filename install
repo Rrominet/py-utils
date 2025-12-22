@@ -14,7 +14,10 @@ target = os.path.join(packagesDir, "ml")
 
 if os.path.exists(target):
     print("old version of py-utils found. Removing it.")
-    shutil.rmtree(target)
+    try : 
+        shutil.rmtree(target)
+    except : 
+        pass
 
 shutil.copytree(current, target)
 print("py-utils from fxos installed.")

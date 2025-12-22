@@ -335,6 +335,9 @@ class Project :
     def askVersion(self) : 
         log.print ("Last version is " + self.lastVersion(), "yellow")
         v = input("New version : ")
+        if (v == "") :
+            log.print("Keeping the last version : " + self.lastVersion(), "yellow")
+            v = self.lastVersion()
         self.setVersion(v)
 
     def updateVersion(self): 
