@@ -58,6 +58,9 @@ def option(name) :
     else : 
         return None
 
+def has(name): 
+    return name in _args
+
 def pos(idx) : 
     if str(idx) in _args : 
         return _args[str(idx)]
