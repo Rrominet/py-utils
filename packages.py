@@ -67,7 +67,13 @@ packages_map = {
             "fedora" : "pkgconf",
             "arch": "pkgconf",
             "gentoo": "dev-util/pkgconfig",
-            }
+            },
+        "libwebkitgtk-6.0-dev" : {
+            "fedora" : "webkitgtk6.0-devel",
+            "redhat" : "webkitgtk6.0-devel",
+            "arch": "webkitgtk6.0",
+            "suse": "webkitgtk6-devel",
+            },
         }
 
 
