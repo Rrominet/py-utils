@@ -4,6 +4,7 @@
 
 This repo contains the following subprojects :
  - [fxmake](https://github.com/Rrominet/py-utils/tree/main/build)
+ - [js-builder](https://github.com/Rrominet/py-utils/tree/main/js_builder)
  - [boilerplate](https://github.com/Rrominet/py-utils/tree/main/boilerplate)
 
 ## Installation

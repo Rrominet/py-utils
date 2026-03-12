@@ -23,7 +23,8 @@ Built on top of `uglifyjs` and `cleancss`. If you don't have those, go install t
 npm install -g uglify-js clean-css-cli
 ```
 
-Also uses the internal `ml` library (`fileTools`, `log`). You know what to do.
+Also uses this `py-utils` lib imported as `ml`.
+If you followed the installation from the `py-utils` [repo]("https://github.com/Rrominet/py-utils"), you're good to go.
 
 ---
 
