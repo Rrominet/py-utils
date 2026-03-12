@@ -236,6 +236,9 @@ def folder(path):
 def filename(path):
     return cleanPath(path, False, False).split("/")[-1]
 
+def name(path):
+    return filename(path)
+
 def parentDir(path):
     return folder(path)
 def parent(path) : return folder(path)
