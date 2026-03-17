@@ -4,7 +4,7 @@ import time
 
 class Bot : 
     def __init__(self, token) : 
-        self.token = token
+        self.token = token.split("\n")[0]
 
     def route(self) : 
         return "https://api.telegram.org/bot" + self.token + "/"
@@ -24,3 +24,9 @@ class Bot :
 
     def getUpdates(self): 
         return self.request("getUpdates", {})
+
+    def infos(self) : 
+        infos = "Bot " + self.token + "\n"
+        infos += "API URL : " + self.route() + "\n"
+        return infos
+
