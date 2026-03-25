@@ -366,11 +366,24 @@ class Project :
         log.print("New version : " + ".".join(last), "yellow")
         self.setVersion(".".join(last))
 
+    def checkIncludesPaths(self) :
+        for inc in self.includes :
+            tocheck = inc.replace("-I", "")
+            log.print("Checking include path " + tocheck, "yellow")
+            if not os.path.exists(tocheck) :
+                log.print("The include path " + inc + " does not exist.", "red")
+                raise Exception("The include path " + inc + " does not exist.")
+            if not os.path.isdir(tocheck) :
+                log.print("The include path " + inc + " is not a directory. Ignoring...", "orange")
+
+        log.print("Includes paths seams good.", "green")
+
     def build(self) : 
         if self.state == ERROR :
             log.print("Cannot build " + self.name + " there was an error in configuration.", "red")
             return
 
+        self.checkIncludesPaths()
         self.cleanIfNeeded()
         self.writeSettings()
         if self.release : 
