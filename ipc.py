@@ -2,6 +2,7 @@ import json
 import sys
 import threading
 import queue
+import traceback
 from typing import Callable, Dict, Any
 from dataclasses import dataclass
 
@@ -70,8 +71,13 @@ def call(process: Process, function: str, args: dict, callback: Callable = None)
 #    "error" : "some error message if the call failed"
 #}
 def reg(function: str, todo: Callable):
+    def _todo(args: dict): 
+        try : 
+            return todo(args)
+        except Exception as e :
+            return {"success": False, "error": str(e), "traceback" : traceback.format_exc(), "args-received" : json.dumps(args)}
     with _registersLock:
-        _registers[function] = todo
+        _registers[function] = _todo
 
 def onStdinLine():
     def handler(line: str):

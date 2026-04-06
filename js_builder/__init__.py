@@ -195,11 +195,11 @@ class JsProject :
             for f in self.js :
                 for k in f : 
                     for j in f[k] :
-                        compiled["js"].append(j)
+                        compiled["js"].append(j.replace(self.build_dir + os.sep, ""))
             for f in self.css :
                 for k in f : 
                     for j in f[k] :
-                        compiled["css"].append(j)
+                        compiled["css"].append(j.replace(self.build_dir + os.sep, ""))
             log.print ("Debug mode : No compilation and write needed.", "yellow")
         
         htmlfile = self.html_tpl.replace("_tpl", "")

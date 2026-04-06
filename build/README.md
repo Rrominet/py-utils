@@ -12,6 +12,11 @@ It’s been created to be easy to use. (and because I *hate* `cmake`)
 
 See the installation process in the parent repo `py-utils` [here](https://github.com/Rrominet/py-utils)
 
+Also you need to install the linker `mold` so the link process works, on debian system : 
+```bash
+sudo apt install mold
+```
+
 ## Getting Started
 
 First, import the module:

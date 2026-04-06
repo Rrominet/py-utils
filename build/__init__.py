@@ -6,6 +6,8 @@ import subprocess
 import shutil
 from concurrent.futures import ThreadPoolExecutor
 import json
+import re
+import hashlib
 
 debug = 1
 release = 2
@@ -64,7 +66,7 @@ class Project :
         if type == debug : 
             self.definitions.append("mydebug")
             self.definitions.append("mldebug")
-            #self.flags.append("-fsanitize=address")
+            self.flags.append("-gsplit-dwarf")
         else : 
             self.definitions.append("NDEBUG")
 
@@ -230,6 +232,7 @@ class Project :
         log.print("Starting linking process...")
         self.createSharedLibsSymlinks()
         cmd = [self.builder]
+        cmd.append("-fuse-ld=mold")
         if self.shared : 
             cmd.extend(["-shared"])
         cmd.extend(self.flagsAsArgs(self.flags))
@@ -482,41 +485,90 @@ class Project :
             else : 
                 self.libs.append(lib.replace(".so", ""))
  
-    def needRebuild(self, src) : 
-        r = False
-        if not os.path.exists(self.obj(src)) : 
-            r = True
-        if not os.path.exists(self.cache(src)) :
-            r = True
-        current = os.path.getsize(src)
+    def depthlist(self, src) :
+        #get the dependencies
         cmd = [self.builder, "-MM", src]
         cmd.extend(self.listAsArgs(self.includes, "-I"))
         ret = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        headers = ret.stdout.decode("utf-8").split("\\\n")
-        headers = headers[1:]
-        headers = headers[:-1]
-        for h in headers : 
-            while h[-1] == " " : 
-                h = h[:-1]
+        ls = ret.stdout.decode("utf-8")
+        if platform.system() == "Windows" :
+            pass
+        else : 
+            ls = ls.replace("\\", "")
+        ls = ls.split("\n")
+        tmp = ls[0].split(":")[1]
+        tmp = tmp.split(" ")
+        ls = ls[1:]
+        for t in tmp :
+            if t == "" : continue
+            ls.append(t)
+        return ls[:5]
 
-            while h[0] == " " : 
-                h = h[1:]
+    def depthmdtime(self, depthls) : 
+        r = {}
+        for d in depthls :
+            for path in d.split(" ") : 
+                if path == "" : continue
+                try : 
+                    r[path] = os.path.getmtime(path)
+                except : 
+                    log.print("Could not get mtime for " + path, "red")
+        return r
 
-            if " " in h : 
-                tmp = h.split(" ")
-                h = tmp[0]
-                for i in range(1, len(tmp)) :
-                    headers.append(tmp[i])
-
-            current += os.path.getsize(h)
-
-        if os.path.exists(self.cache(src)) :
-            prev = int(open(self.cache(src), "r").read())
-        else :  
-            prev = 0
-        if prev != current : 
+    def needRebuild(self, src) : 
+        log.print("Checking if " + src + " needs to be rebuilt...", "yellow")
+        r = False
+        if not os.path.exists(self.obj(src)) : 
+            log.print("Detecting changed, .obj not found. (" + src + ")", "yellow")
             r = True
-        open(self.cache(src), "w").write(str(current))
+        current = ft.read(src)
+        src_hash = hashlib.sha256(current.encode("utf-8")).hexdigest()
+        cache_data = {}
+        cache_data["src_hash"] = src_hash
+        cache_data["depth"] = {}
+        old_cached_data = {}
+        old_cached_data["src_hash"] = ""
+        old_cached_data["depth"] = {}
+        depth = []
+        if not os.path.exists(self.cache(src)) :
+            r = True
+            log.print("Detecting changed, .cache not found. (" + src + ")", "yellow")
+            depth = self.depthlist(src)
+            cache_data["depth"] = self.depthmdtime(self.depthlist(src))
+        else : 
+            old_cached_data = json.loads(ft.read(self.cache(src)))
+
+        if src_hash != old_cached_data["src_hash"] and os.path.exists(self.cache(src)):
+            r = True
+            log.print("Detecting changed, src hash changed. (" + src + ")", "yellow")
+            cache_data["depth"] = self.depthmdtime(self.depthlist(src))
+
+        else : 
+            diff = False
+            changed = ""
+            if not r : 
+                for d in old_cached_data["depth"] :
+                    if old_cached_data["depth"][d] != os.path.getmtime(d) :
+                        if ("_gen.h" in d) : continue
+                        diff = True
+                        changed = d
+                        cache_data["depth"] = self.depthmdtime(self.depthlist(src))
+                        break
+            if diff : 
+                log.print("Detecting changed, one of the depth list mtime changed : " + changed + " -- (" + src + ")", "yellow")
+                r = True
+
+            if not diff and not r : 
+                cache_data["depth"] = old_cached_data["depth"]
+            if len(cache_data["depth"])==0 and len(old_cached_data["depth"]) != 0 :
+                cache_data["depth"] = old_cached_data["depth"]
+
+        try : 
+            open(self.cache(src), "w").write(json.dumps(cache_data))
+        except : 
+            log.print("Could not write cache file for " + src, "red")
+        if r : 
+            log.print("Rebuilding " + src + " because it has changed.", "yellow")
         return r
 
     def addToLibDirs(self, dir) : 
@@ -618,6 +670,10 @@ def create(name, argv=[], builder="g++") :
     _r.builder = builder
     if len(argv) > 0 :
         _r.setFromArgs(argv)
+    if platform.system() == "Windows" : 
+        pass
+    else : 
+        _r.addToLibDirs(["/usr/local/lib", "/usr/lib", "/usr/lib/x86_64-linux-gnu"])
     return _r
 
 
