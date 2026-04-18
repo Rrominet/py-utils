@@ -20,6 +20,9 @@ INCR_MINOR = 2
 INCR_MED = 3
 INCR_MAJOR = 4
 
+BUILD = 1
+SET_VERSION = 2
+
 class Project : 
     def __init__(self, name) : 
         self.name = name
@@ -34,7 +37,7 @@ class Project :
         self.builder = "g++"
         self.includes = []
         self.lib_dirs = []
-        self.rpath_dirs = []
+        self.rpath_dirs = ["$ORIGIN", "$ORIGIN/../lib", "$ORIGIN/lib"]
         self.libs = [] # names
         self.libsPaths = []
         self.srcs = []
@@ -50,6 +53,7 @@ class Project :
         self.srcs_exclude = []
         self.dependencies = {}
         self.release = False
+        self.mode = BUILD
 
     #type is debug or release
     def setType(self, type) : 
@@ -76,6 +80,8 @@ class Project :
             self.flags.append("Os")
 
     def setFromArgs(self, args) : 
+        if "set-version" in args : 
+            self.mode = SET_VERSION
         if "release" in args :
             self.setType(release)
             self.release = True
@@ -382,6 +388,9 @@ class Project :
         log.print("Includes paths seams good.", "green")
 
     def build(self) : 
+        if self.mode == SET_VERSION :
+            self.askVersion()
+            return
         if self.state == ERROR :
             log.print("Cannot build " + self.name + " there was an error in configuration.", "red")
             return
@@ -455,7 +464,6 @@ class Project :
         for f in os.listdir(proj) :
             if ft.ext(f) == "a" or ft.ext(f) == "lib"  or ft.ext(f) == "so" :
                 self.addToLibs(proj + os.sep + f)
-                return
 
     def writeDependencies(self) :
         if self.dependencies == {} :
@@ -496,13 +504,16 @@ class Project :
         else : 
             ls = ls.replace("\\", "")
         ls = ls.split("\n")
-        tmp = ls[0].split(":")[1]
-        tmp = tmp.split(" ")
-        ls = ls[1:]
-        for t in tmp :
-            if t == "" : continue
-            ls.append(t)
-        return ls[:5]
+        try : 
+            tmp = ls[0].split(":")[1]
+            tmp = tmp.split(" ")
+            ls = ls[1:]
+            for t in tmp :
+                if t == "" : continue
+                ls.append(t)
+        except : 
+            pass
+        return ls[:10]
 
     def depthmdtime(self, depthls) : 
         r = {}
