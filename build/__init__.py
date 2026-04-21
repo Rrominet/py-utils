@@ -23,6 +23,10 @@ INCR_MAJOR = 4
 BUILD = 1
 SET_VERSION = 2
 
+PROGRAMM = 1
+SHARED_LIB = 2
+STATIC_LIB = 3
+
 class Project : 
     def __init__(self, name) : 
         self.name = name
@@ -48,7 +52,8 @@ class Project :
         self.state = OK
         self.static = False
         self.useThreads = True
-        self.shared = False #True if you want to build as a shared lib and not as a programm
+        self.shared = False #True if you want to build as a shared lib and not as a programm, depreciated, use outputType in new projects.
+        self.outputType = PROGRAMM
         self.useModules= False
         self.srcs_exclude = []
         self.dependencies = {}
@@ -131,7 +136,7 @@ class Project :
             cmd.append("-x")
             cmd.append("c")
 
-        if self.shared : 
+        if self.shared or self.outputType == SHARED_LIB : 
             cmd += ["-c", "-fPIC", srcfilepath,
                     "-o", self.obj(srcfilepath)]
         else : 
@@ -237,9 +242,26 @@ class Project :
             return
         log.print("Starting linking process...")
         self.createSharedLibsSymlinks()
+        if self.outputType == STATIC_LIB :
+            cmd = ["ar"]
+            cmd.append("rcs")
+            cmd.append("lib" + self.name + ".a")
+            for s in self.srcs : 
+                if s.split(os.sep)[-1] in self.srcs_exclude :
+                    continue
+                cmd.append(self.obj(s))
+            self.logCmd(cmd)
+            ret = subprocess.call(cmd)
+            if ret != 0 :
+                log.print("Linking error.", "red")
+                raise Exception("Linking error")
+
+            log.print("Linking doned.\n", "yellow")
+            return
+
         cmd = [self.builder]
         cmd.append("-fuse-ld=mold")
-        if self.shared : 
+        if self.shared or self.outputType == SHARED_LIB : 
             cmd.extend(["-shared"])
         cmd.extend(self.flagsAsArgs(self.flags))
         if self.static :
