@@ -27,6 +27,17 @@ PROGRAMM = 1
 SHARED_LIB = 2
 STATIC_LIB = 3
 
+class PackageSettings : 
+    def __init__(self) : 
+        self.rootDir = ""
+        self.uploadDir = ""
+        self.database = ""
+        self._toCopy = []
+
+    #the dest is relative to the rootDir (the distrib dir)
+    def addToCopy(self, path, dest) : 
+        self._toCopy.append((path, dest))
+
 class Project : 
     def __init__(self, name) : 
         self.name = name
@@ -58,6 +69,7 @@ class Project :
         self.srcs_exclude = []
         self.dependencies = {}
         self.release = False
+        self.packageSettings = PackageSettings()
         self.mode = BUILD
 
     #type is debug or release
@@ -697,6 +709,51 @@ class Project :
         else : 
             ft.write(content, self.build_dir + os.sep + filepath)
             return True
+
+    def createPackage(self) : 
+        if not os.path.exists(self.packageSettings.rootDir): 
+            log.print("The package root dir " + self.packageSettings.rootDir + " does not exist. Abort.", "red")
+            return
+
+        root = self.packageSettings.rootDir
+        for f in self.packageSettings._toCopy : 
+            log.print("Copying " + f[0], "yellow")
+            if os.path.isdir(f[0]) :
+                shutil.copytree(f[0], root + os.sep + f[1], dirs_exist_ok=True)
+            else : 
+                shutil.copy(f[0], root + os.sep + f[1])
+        log.print("All files are copied and ready to be distributed.\nCreating the package now...", "green")
+
+        to_compress = []
+        for f in os.listdir(root) :
+            if os.path.isdir(root + os.sep + f) :
+                to_compress.append(f)
+        os.chdir(root)
+        cmd = ["/usr/bin/zip", "-r", ".." + os.sep + self.name + "." + self.lastVersion() + ".zip", "."]
+        r = subprocess.run(cmd)
+        if (r.returncode != 0) :
+            log.print("Error while creating the package.\n(Error code : " + str(r.returncode)  + ")", "red")
+        log.print("Package created and ready.", "green")
+        log.print("Uploading the package on the server...", "yellow")
+        if self.packageSettings.uploadDir == "" : 
+            log.print ("The upload dir is empty, no upload will be done.", "orange")
+            return
+        if self.packageSettings.database == "" :
+            log.print("No database filepath given, update the server package list can't be done.", "red")
+            return
+        
+        os.chdir("..")
+        shutil.copy(self.name + "." + self.lastVersion() + ".zip", self.packageSettings.uploadDir)
+        log.print("Package uploaded.", "green")
+        log.print("Updating the database...", "yellow")
+        data = {}
+        try : 
+            data = json.loads(ft.read(self.packageSettings.database))
+        except : 
+            pass
+        data[self.name] = {"version" : self.lastVersion()}
+        ft.write(json.dumps(data), self.packageSettings.database)
+        log.print("Database updated.", "green")
 
 def create(name, argv=[], builder="g++") : 
     _r = Project(name)

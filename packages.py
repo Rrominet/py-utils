@@ -13,8 +13,6 @@ managers = {
         'emerge': 'gentoo',
     }
 
-
-
 packages_map = {
         "python3" : {
             "arch" : "python",
@@ -46,6 +44,14 @@ packages_map = {
             "suse": "boost-devel",
             "gentoo": "dev-libs/boost"
             },
+        "libboost" : {
+            "debian" : "libboost-all",
+            "fedora" : "boost",
+            "redhat" : "boost",
+            "arch" : "boost",
+            "suse": "libboost",
+            "gentoo": "dev-libs/boost"
+            },
         "make" : {
             "gentoo" : "dev-util/make",
             },
@@ -56,11 +62,27 @@ packages_map = {
                 "suse" : "glibc-devel", 
                 "gentoo" : "dev-libs/glibc"
                 },
+        "libc6": {
+                "debian" : "libc6",
+                "fedora" : "glibc",
+                "redhat" : "glibc",
+                "arch" : "glibc",
+                "suse" : "glibc",
+                "gentoo" : "dev-libs/glibc"
+                },
         "libgtkmm-4.0-dev" : {
                 "fedora" : "gtkmm4.0-devel",
                 "redhat" : "gtkmm4.0-devel",
                 "arch" : "gtkmm4.0",
                 "suse" : "gtkmm4-devel",
+                "gentoo" : "dev-cpp/gtkmm"
+            },
+        "libgtkmm-4.0" : {
+                "debian" : "libgtkmm-4.0",
+                "fedora" : "gtkmm4.0",
+                "redhat" : "gtkmm4.0",
+                "arch" : "gtkmm4.0",
+                "suse" : "gtkmm4",
                 "gentoo" : "dev-cpp/gtkmm"
             },
         "pkg-config" : {
@@ -74,8 +96,15 @@ packages_map = {
             "arch": "webkitgtk6.0",
             "suse": "webkitgtk6-devel",
             },
+        "libwebkitgtk-6.0" : {
+            "debian" : "libwebkitgtk-6.0",
+            "fedora" : "webkitgtk6.0",
+            "redhat" : "webkitgtk6.0",
+            "arch": "webkitgtk6.0",
+            "suse": "webkitgtk6",
+            "gentoo": "net-libs/webkit-gtk",
+            },
         }
-
 
 
 def detect() : 
