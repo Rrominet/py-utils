@@ -307,8 +307,10 @@ class Project :
         log.print("Linking doned.\n", "yellow")
 
     def getFileName(self) : 
-        if self.shared : 
+        if self.outputType == SHARED_LIB : 
             return "lib" + self.name + ".so"
+        elif self.outputType == STATIC_LIB :
+            return "lib" + self.name + ".a"
         else : 
             return self.name
 
