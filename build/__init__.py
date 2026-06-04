@@ -664,7 +664,13 @@ class Project :
     #OOOR a directory where there are .pc files
     def addInstalledLibrary(self, libname) : 
         def add_one(self, libname) :
-            log.print("Adding " + libname + " from pkg-config.", "yellow")
+            if os.sep in libname : 
+                log.print ("Adding a .pc file from " + libname, "yellow")
+                if not os.path.exists(libname) :
+                    log.print("Could not find " + libname, "red")
+                    return
+            else :
+                log.print("Adding " + libname + " from pkg-config.", "yellow")
             includes = []
             flags = []
             libs = []
