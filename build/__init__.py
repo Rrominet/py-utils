@@ -660,33 +660,43 @@ class Project :
         return rpath
 
     #using pkg-config
+    #libname can alsoo be a path to a .pc file
+    #OOOR a directory where there are .pc files
     def addInstalledLibrary(self, libname) : 
-        includes = []
-        flags = []
-        libs = []
+        def add_one(self, libname) :
+            log.print("Adding " + libname + " from pkg-config.", "yellow")
+            includes = []
+            flags = []
+            libs = []
 
+            cmd = ["pkg-config", "--cflags", libname]
+            ret = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            _flags = ret.stdout.decode("utf-8")
 
-        cmd = ["pkg-config", "--cflags", libname]
-        ret = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        _flags = ret.stdout.decode("utf-8")
+            for f in _flags.split(" ") : 
+                if f.startswith("-I") :
+                    includes.append(f)
+                elif f.startswith("-") : 
+                    flags.append(f)
 
-        for f in _flags.split(" ") : 
-            if f.startswith("-I") :
-                includes.append(f)
-            elif f.startswith("-") : 
-                flags.append(f)
+            cmd = ["pkg-config", "--libs", libname]
+            ret = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            _libs = ret.stdout.decode("utf-8")
 
-        cmd = ["pkg-config", "--libs", libname]
-        ret = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        _libs = ret.stdout.decode("utf-8")
+            for l in _libs.split(" ") :
+                if l.startswith("-l") :
+                    libs.append(l)
 
-        for l in _libs.split(" ") :
-            if l.startswith("-l") :
-                libs.append(l)
+            self.includes += includes
+            self.flags += flags
+            self.libs += libs
 
-        self.includes += includes
-        self.flags += flags
-        self.libs += libs
+        if not os.path.isdir(libname) :
+            add_one(self, libname)
+        else : 
+            for f in os.listdir(libname) :
+                if f.endswith(".pc") :
+                    add_one(self, libname + os.sep + f)
 
     def setForModules(self) : 
         self.flags += ["-std=c++20", "-fmodules-ts"]
