@@ -636,6 +636,13 @@ class Project :
             self.rpath_dirs.append(dir)
             self.lib_dirs.append(dir)
 
+    def addAllLibsInDir(self, dir) : 
+        self.addToLibDirs(dir)
+        files = os.listdir(dir)
+        for f in files :
+            if ft.ext == "so" or ft.ext == "a" or ft.ext == "lib" :
+                self.addToLibs(dir + os.sep + f)
+
     def createSharedLibsSymlinks(self) : 
         log.print("Create libs symlinks if needed.", "yellow")
         for d in self.lib_dirs :
