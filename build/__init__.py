@@ -637,10 +637,14 @@ class Project :
             self.lib_dirs.append(dir)
 
     def addAllLibsInDir(self, dir) : 
+        if not os.path.isdir(dir) :
+            log.print("Directory of shared libraries not found : " + dir, "red")
+            self.state = ERROR
+            return
         self.addToLibDirs(dir)
         files = os.listdir(dir)
         for f in files :
-            if ft.ext == "so" or ft.ext == "a" or ft.ext == "lib" :
+            if ft.ext(f) == "so" or ft.ext(f) == "a" or ft.ext(f) == "lib" :
                 self.addToLibs(dir + os.sep + f)
 
     def createSharedLibsSymlinks(self) : 
