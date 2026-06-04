@@ -693,9 +693,15 @@ class Project :
                 if l.startswith("-l") :
                     libs.append(l)
 
-            self.includes += includes
-            self.flags += flags
-            self.libs += libs
+            for i in includes : 
+                if i not in self.includes :
+                    self.includes.append(i)
+            for f in flags :
+                if f not in self.flags :
+                    self.flags.append(f)
+            for l in libs :
+                if l not in self.libs :
+                    self.libs.append(l)
 
         if not os.path.isdir(libname) :
             add_one(self, libname)
