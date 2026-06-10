@@ -81,7 +81,7 @@ class Project :
         elif type == debug and self.builder == "em++" :
             self.flags.append("O0")
             self.flags.append("-fexceptions")
-            self.flags.append("-fsanitize=undefined")
+            #self.flags.append("-fsanitize=undefined")
             self.flags.append("-sASSERTIONS=2 ")
             self.flags.append("-g3")
             self.flags.append("-sEXCEPTION_DEBUG")
@@ -733,7 +733,7 @@ class Project :
         self.useThreads = False
 
     def addEmiscriptenFlags(self) :
-        self.flags += ["-sFETCH", "-s", "LLD_REPORT_UNDEFINED", "-lembind", "-std=c++17", "-fexceptions"]
+        self.flags += ["-sFETCH", "-sLLD_REPORT_UNDEFINED", "-lembind", "-std=c++17", "-fexceptions"]
 
     #filepath is relative the project build dir
     def write(self, filepath, content) :
