@@ -77,19 +77,20 @@ class Project :
         if type == debug and self.builder == "g++":
             self.flags.append("Og")
             self.flags.append("g")
+            self.flags.append("-gsplit-dwarf")
         elif type == debug and self.builder == "em++" :
             self.flags.append("O0")
-            self.flags.append("gsource-map")
             self.flags.append("-fexceptions")
             self.flags.append("-fsanitize=undefined")
             self.flags.append("-sASSERTIONS=2 ")
             self.flags.append("-g3")
             self.flags.append("-sEXCEPTION_DEBUG")
+            self.flags.append("-sSTACK_OVERFLOW_CHECK=2")
+            self.flags.append("-sNO_DISABLE_EXCEPTION_CATCHING")
 
         if type == debug : 
             self.definitions.append("mydebug")
             self.definitions.append("mldebug")
-            self.flags.append("-gsplit-dwarf")
         else : 
             self.definitions.append("NDEBUG")
 
@@ -274,7 +275,8 @@ class Project :
             return
 
         cmd = [self.builder]
-        cmd.append("-fuse-ld=mold")
+        if self.builder != "em++" and self.builder != "emcc" :
+            cmd.append("-fuse-ld=mold")
         if self.shared or self.outputType == SHARED_LIB : 
             cmd.extend(["-shared"])
         cmd.extend(self.flagsAsArgs(self.flags))
