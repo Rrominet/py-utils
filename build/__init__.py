@@ -82,7 +82,9 @@ class Project :
             self.flags.append("gsource-map")
             self.flags.append("-fexceptions")
             self.flags.append("-fsanitize=undefined")
-            self.flags.append("-ASSERTIONS=1 ")
+            self.flags.append("-sASSERTIONS=2 ")
+            self.flags.append("-g3")
+            self.flags.append("-sEXCEPTION_DEBUG")
 
         if type == debug : 
             self.definitions.append("mydebug")
@@ -549,7 +551,7 @@ class Project :
                 ls.append(t)
         except : 
             pass
-        return ls[:10]
+        return ls[:20]
 
     def depthmdtime(self, depthls) : 
         r = {}
@@ -729,7 +731,7 @@ class Project :
         self.useThreads = False
 
     def addEmiscriptenFlags(self) :
-        self.flags += ["-sFETCH", "-s", "LLD_REPORT_UNDEFINED", "-lembind", "-std=c++17"]
+        self.flags += ["-sFETCH", "-s", "LLD_REPORT_UNDEFINED", "-lembind", "-std=c++17", "-fexceptions"]
 
     #filepath is relative the project build dir
     def write(self, filepath, content) :
