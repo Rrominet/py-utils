@@ -13,6 +13,12 @@ release = 2
 class JsProject : 
     def __init__(self, build_dir="") : 
         self.type = debug
+        self._name = ""
+        self._description = ""
+        self.pwa = False
+
+        #add files here you want to install that are not in the build for whatever reason
+        self.toInstall = []
         if build_dir == "" : 
             self.build_dir = os.getcwd()
         else : 
@@ -28,6 +34,27 @@ class JsProject :
         #need to set this 
         #relative to build_dir
         self.html_tpl = ""
+
+    def variable(self, name): 
+        if(getattr(self, "_" + name) == "") :
+            if os.path.exists(self.build_dir + os.sep + name) :
+                setattr(self, "_" + name, ft.read(self.build_dir + os.sep + name))
+        return getattr(self, "_" + name)
+
+    def saveVariable(self, name, value): 
+        setattr(self, "_" + name, value)
+        ft.write(getattr(self, "_" + name), self.build_dir + os.sep + name)
+        return getattr(self, "_" + name)
+
+    def name(self): 
+        return self.variable("name")
+    def saveName(self, name) :
+        return self.saveVariable("name", name)
+
+    def description(self):
+        return self.variable("description")
+    def saveDescription(self, name) :
+        return self.saveVariable("description", name)
 
     def readWrittenFiles(self) : 
         if not os.path.exists(self.build_dir + os.sep + ".written_files") :
@@ -50,6 +77,8 @@ class JsProject :
             self.setType(release)
         else : 
             self.setType(debug)
+        if "pwa" in args: 
+            self.pwa = True
 
     def clean(self) : 
         log.print("Cleaning ...", "yellow")
@@ -65,14 +94,19 @@ class JsProject :
     def version(self) : 
         if not os.path.exists(self.build_dir + os.sep + "version") :
             return 0
-        return int(ft.read(self.build_dir + os.sep + "version"))
+        versinstr = ft.read(self.build_dir + os.sep + "version")
+        if (versinstr == "") :
+            return 0
+        try : 
+            return int(versinstr)
+        except :
+            return 0
 
     def setVersion(self, version) : 
         ft.write(str(version), self.build_dir + os.sep + "version")
 
     def incrementVersion(self):
-        ft.write(self.version() + 1, self.build_dir + os.sep + "version")
-
+        ft.write(str(self.version() + 1), self.build_dir + os.sep + "version")
 
     #if the src is a file, it will be added to js or css depending of its extension
     #if you give a list and a keyname, all the files will be bundle in one file at the end with the name of the keyname.
@@ -190,6 +224,9 @@ class JsProject :
                     file = self.write(k + ".css", f[k])
                     compiled["css"].append(file)
             log.print("Files written.", "green")
+            log.print("Incrementing version... (current : " + str(self.version()) + ")", "yellow")
+            self.incrementVersion()
+            log.print("Version incremented : " + str(self.version()), "green")
 
         else : 
             for f in self.js :
@@ -207,7 +244,141 @@ class JsProject :
         self.generateHtml(htmlfile, compiled)
         log.print("Html file generated.", "green")
         self.saveWrittenFiles()
+        if self.pwa : 
+            self.buildPWA()
+
         log.print("Done.", "green")
+
+    def buildPWA(self) :
+        self.generateIcon()
+        self.createPWAManifest()
+        self.createPWAServiceWorkerFile()
+
+        log.print("PWA files generated.", "green")
+
+    def generateIcon(self) : 
+        if os.path.exists(self.build_dir + os.sep + "images" + os.sep + "512.png") :
+            log.print("Icon already exist. No need to generate it again.", "green")
+            return
+        path = input("Enter the path to your app icon : ")
+        cmd = ["magick", path, "-resize", "512x512", self.build_dir + os.sep + "images" + os.sep + "512.png"] 
+        log.print("Generating the icon...", "yellow")
+        log.print ("Command : " + " ".join(cmd), "yellow")
+        subprocess.run(cmd)
+        if (os.path.exists(self.build_dir + os.sep + "images" + os.sep + "512.png")) :
+            log.print("Icon generated.", "green")
+        else : 
+            log.print("Icon generation failed.", "red")
+
+    def createPWAManifest(self) : 
+        s ="""
+{
+  "name": "*name*",
+  "description": "*description*",
+  "icons": [
+    {
+      "src": "images/512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#222222",
+  "theme_color": "#222222"
+}
+        """
+
+        if (self.name() == "") : 
+            self.saveName(input("Missing a Name for you App, What is it : "))
+
+        if (self.description() == "") : 
+            self.saveDescription(input("Missing a Description for you App, What is it : "))
+
+        s = s.replace("*name*", self.name().replace("\n", ""))
+        s = s.replace("*description*", self.description().replace("\n", "\\n"))
+
+        ft.write(s, self.build_dir + os.sep + "manifest.json")
+        log.print("Manifest generated.", "green")
+
+    def getPWACacheFiles(self) : 
+        files = ["./"]
+        tmp_files = ft.hierarchie(os.path.abspath(self.build_dir))
+        for f in tmp_files:
+            if os.path.isdir(f) : continue
+            if ft.ext(f) == "php" : continue
+            if ft.ext(f) == "py" : continue
+            if ft.ext(f) == "" : continue
+            if "README.md" in f : continue
+            if ".written_files" in f : continue
+            if "frameworks" in f : continue
+            if "generate" in f : continue
+            if "version" in f : continue
+            if ".git" in f : continue
+            if ("Node" in f) : continue
+            if ("libs" in f) : continue
+            if ("doc" in f) : continue
+            if "index_tpl.html" in f : continue
+            if "make" in f : continue
+            f = f.replace(os.path.abspath(".") + os.sep, "")
+            f = f.replace(os.sep, "/")
+            files.append(f)
+        r = "["
+        for f in files : 
+            r += "\"" + f + "\",\n"
+        r += "]"
+        return r;
+
+    def defaultSW(self) :
+        return """
+// This is file is generated, don't edit it.
+const version = *version*;
+const cached = *cache-list*;
+const cache_name = "cache";
+async function oninstall()
+{
+    const cache = await caches.open(cache_name);
+    return cache.addAll(cached);
+}
+self.addEventListener("install", (event) => 
+    {
+        event.waitUntil(oninstall());
+    });
+async function cacheFirst(request) 
+{
+    const cachedResponse = await caches.match(request);
+    if (cachedResponse)
+        return cachedResponse;
+    try
+    {
+        const networkResponse = await fetch(request);
+        if (networkResponse.ok) {
+            const cache = await caches.open(cache_name);
+            cache.put(request, networkResponse.clone());
+        }
+        return networkResponse;
+    } catch (error) {
+        return Response.error();
+    }
+}
+self.addEventListener("fetch", (event) =>
+    {
+        if (event.request.method != "GET")
+            {
+                // this let the browser handle the request normally.
+                return;
+            }
+        const url = new URL(event.request.url);
+        event.respondWith(cacheFirst(event.request));
+    });
+        """
+
+    def createPWAServiceWorkerFile(self): 
+        sw = self.defaultSW()
+        sw = sw.replace("*cache-list*", self.getPWACacheFiles())
+        sw = sw.replace("*version*", str(self.version()))
+        ft.write(sw, self.build_dir + os.sep + "sw.js")
+        log.print("Service worker file generated : " + self.build_dir + os.sep + "sw.js", "green")
 
     #filepath once again is relative to build_dir
     def generateHtml(self, filepath, compiled) :
@@ -216,12 +387,17 @@ class JsProject :
         js = ""
         css = ""
 
+        if self.pwa : 
+            js +="""<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js")</script>"""
         for j in compiled["js"] : 
             if not j : 
                 continue
             js  += "<script src=\"" + j + "\" defer></script>"
             if self.type == debug : 
                 js += "\n"
+
+        if self.pwa : 
+            css +=" <link rel='manifest' href='./manifest.json' />"
 
         for c in compiled["css"] : 
             if not c : 
@@ -267,6 +443,18 @@ class JsProject :
                 continue
             log.print("Copying " + f + " to " + dest + os.sep + ft.name(f), "yellow")
             shutil.copy(f, dest + os.sep + ft.name(f))
+            if (self.pwa) : 
+                self.toInstall.append("./manifest.json")
+                self.toInstall.append("./sw.js")
+                self.toInstall.append("./images/512.png")
+            for f in self.toInstall : 
+                if os.path.isdir(f) :
+                    log.print("Copying " + f + " to " + dest + os.sep + f, "yellow")
+                    shutil.copytree(f, dest + os.sep + f, dirs_exist_ok=True)
+                else :
+                    log.print("Copying " + f + " to " + dest + os.sep + f, "yellow")
+                    shutil.copy(f, dest + os.sep + f)
+        log.print("installed.", "green")
 
 def create(argv=[], build_dir="") : 
     _r = JsProject(build_dir)
