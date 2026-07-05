@@ -19,6 +19,10 @@ class JsProject :
 
         #add files here you want to install that are not in the build for whatever reason
         self.toInstall = []
+
+        #add the files here you don't want to pwa to cache in advance
+        self.nocache = []
+
         if build_dir == "" : 
             self.build_dir = os.getcwd()
         else : 
@@ -245,14 +249,14 @@ class JsProject :
         log.print("Html file generated.", "green")
         self.saveWrittenFiles()
         if self.pwa : 
-            self.buildPWA()
+            self.buildPWA(self.nocache)
 
         log.print("Done.", "green")
 
-    def buildPWA(self) :
+    def buildPWA(self, filesToNotCache=[]) :
         self.generateIcon()
         self.createPWAManifest()
-        self.createPWAServiceWorkerFile()
+        self.createPWAServiceWorkerFile(filesToNotCache)
 
         log.print("PWA files generated.", "green")
 
@@ -301,7 +305,8 @@ class JsProject :
         ft.write(s, self.build_dir + os.sep + "manifest.json")
         log.print("Manifest generated.", "green")
 
-    def getPWACacheFiles(self) : 
+    def getPWACacheFiles(self, filesToNotCache=[]) : 
+        print(filesToNotCache)
         files = ["./"]
         tmp_files = ft.hierarchie(os.path.abspath(self.build_dir))
         for f in tmp_files:
@@ -320,6 +325,23 @@ class JsProject :
             if ("doc" in f) : continue
             if "index_tpl.html" in f : continue
             if "make" in f : continue
+
+            ignore = False
+            for f2 in filesToNotCache :
+                if os.path.isdir(f2) : 
+                    if f2 in ft.parent(f) : 
+                        ignore = True
+                        continue
+                if os.path.exists(f2) :
+                    if f2.startswith("./") :
+                        f2 = f2.replace("./", "")
+                    if f.startswith("./") :
+                        f = f.replace("./", "")
+                    if f2 == f :
+                        ignore = True
+                        continue
+            if ignore : 
+                continue
             f = f.replace(os.path.abspath(".") + os.sep, "")
             f = f.replace(os.sep, "/")
             files.append(f)
@@ -330,8 +352,7 @@ class JsProject :
         return r;
 
     def defaultSW(self) :
-        return """
-// This is file is generated, don't edit it.
+        return """// This is file is generated, don't edit it.
 const version = *version*;
 const cached = *cache-list*;
 const cache_name = "cache";
@@ -363,19 +384,14 @@ async function cacheFirst(request)
 }
 self.addEventListener("fetch", (event) =>
     {
-        if (event.request.method != "GET")
-            {
-                // this let the browser handle the request normally.
-                return;
-            }
-        const url = new URL(event.request.url);
+        if (event.request.method != "GET"){return;}
         event.respondWith(cacheFirst(event.request));
     });
         """
 
-    def createPWAServiceWorkerFile(self): 
+    def createPWAServiceWorkerFile(self, filesToNotCache=[]) : 
         sw = self.defaultSW()
-        sw = sw.replace("*cache-list*", self.getPWACacheFiles())
+        sw = sw.replace("*cache-list*", self.getPWACacheFiles(filesToNotCache))
         sw = sw.replace("*version*", str(self.version()))
         ft.write(sw, self.build_dir + os.sep + "sw.js")
         log.print("Service worker file generated : " + self.build_dir + os.sep + "sw.js", "green")
@@ -443,17 +459,19 @@ self.addEventListener("fetch", (event) =>
                 continue
             log.print("Copying " + f + " to " + dest + os.sep + ft.name(f), "yellow")
             shutil.copy(f, dest + os.sep + ft.name(f))
-            if (self.pwa) : 
-                self.toInstall.append("./manifest.json")
-                self.toInstall.append("./sw.js")
-                self.toInstall.append("./images/512.png")
-            for f in self.toInstall : 
-                if os.path.isdir(f) :
-                    log.print("Copying " + f + " to " + dest + os.sep + f, "yellow")
-                    shutil.copytree(f, dest + os.sep + f, dirs_exist_ok=True)
-                else :
-                    log.print("Copying " + f + " to " + dest + os.sep + f, "yellow")
-                    shutil.copy(f, dest + os.sep + f)
+        if (self.pwa) : 
+            self.toInstall.append("./manifest.json")
+            self.toInstall.append("./sw.js")
+            self.toInstall.append("./images/512.png")
+        for f in self.toInstall : 
+            if os.path.isdir(f) :
+                log.print("Copying " + f + " to " + dest + os.sep + f, "yellow")
+                shutil.copytree(f, dest + os.sep + f, dirs_exist_ok=True)
+            else :
+                log.print("Copying " + f + " to " + dest + os.sep + f, "yellow")
+                if not os.path.isdir(ft.parent(dest + os.sep + f)) :
+                    os.makedirs(ft.parent(dest + os.sep + f))
+                shutil.copy(f, dest + os.sep + f)
         log.print("installed.", "green")
 
 def create(argv=[], build_dir="") : 
