@@ -40,11 +40,11 @@ class AppPage :
         if "content" in opts and content == "" :
             self.content = opts["content"]
 
-        log.print("Trying to read : " + self.content, "yellow")
+        log.print("Trying to read : " + self.content[0:50], "yellow")
         if os.path.exists(self.content) : 
             self.content = ft.read(self.content)
         else : 
-            log.print("File " + self.content + " not found. Considered as pure text.", "yellow")
+            log.print("File " + self.content[0:50] + " not found. Considered as pure text.", "yellow")
 
         self._level = -1
         if "url" not in opts:
@@ -55,7 +55,7 @@ class AppPage :
             log.print("AppPage missing keys : " + ", ".join(self.missing_keys), "red")
         self.opts = opts
 
-    def filepath(self, root) : 
+    def filepath(self) : 
         f = self.opts["url"]
         if ft.ext(f) == "" : 
             return f + "/index.html"
@@ -487,7 +487,7 @@ class JsProject :
     def getPWACacheFiles(self, filesToNotCache=[]) : 
         print(filesToNotCache)
         files = ["./"]
-        tmp_files = ft.hierarchie(os.path.abspath(self.build_dir))
+        tmp_files = ft.hierarchie(os.path.abspath(self.build_dir), True, [], True)
         for f in tmp_files:
             if os.path.isdir(f) : continue
             if ft.ext(f) == "php" : continue
@@ -504,6 +504,10 @@ class JsProject :
             if ("doc" in f) : continue
             if "index_tpl.html" in f : continue
             if "make" in f : continue
+            if "llm.txt" in f : continue
+            if "sitemap.xml" in f : continue
+            if "robots.txt" in f : continue
+            if "__pycache__" in f : continue
 
             ignore = False
             for f2 in filesToNotCache :
@@ -516,7 +520,7 @@ class JsProject :
                         f2 = f2.replace("./", "")
                     if f.startswith("./") :
                         f = f.replace("./", "")
-                    if f2 == f :
+                    if f2 == f.replace(self.build_dir + os.sep, "") :
                         ignore = True
                         continue
             if ignore : 
@@ -526,7 +530,7 @@ class JsProject :
             files.append(f)
         r = "["
         for f in files : 
-            r += "\"" + f + "\",\n"
+            r += "\"" + f.replace("\"", "\\\"") + "\",\n"
         r += "]"
         return r;
 
@@ -587,7 +591,7 @@ self.addEventListener("fetch", (event) =>
         css = ""
 
         if self.pwa : 
-            js +="""<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js")</script>"""
+            js +="<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('" + prefix + "sw.js')</script>"
         for j in compiled["js"] : 
             if not j : 
                 continue
@@ -646,8 +650,12 @@ self.addEventListener("fetch", (event) =>
             if os.path.exists(dest + os.sep + ft.name(f)) :
                 log.print("File " + ft.name(f) + " didn't change, skipping.", "yellow")
                 continue
-            log.print("Copying " + f + " to " + dest + os.sep + ft.name(f), "yellow")
-            shutil.copy(f, dest + os.sep + ft.name(f))
+            try :
+                log.print("Copying " + f + " to " + dest + os.sep + f.replace(self.build_dir + os.sep, ""), "yellow")
+                shutil.copy(f, dest + os.sep + f.replace(self.build_dir + os.sep, ""))
+            except : 
+                log.print("Error while copying " + f + " to " + dest + os.sep + f.replace(self.build_dir + os.sep, ""), "yellow")
+
         if (self.pwa) : 
             self.toInstall.append("./manifest.json")
             self.toInstall.append("./sw.js")
@@ -656,16 +664,38 @@ self.addEventListener("fetch", (event) =>
             self.toInstall.append("./robots.txt")
         if os.path.exists(self.build_dir + os.sep + "/sitemap.xml") :
             self.toInstall.append("./sitemap.xml")
+        if os.path.exists(self.build_dir + os.sep + "/llm.txt") :
+            self.toInstall.append("./llm.txt")
+        if os.path.exists(self.build_dir + os.sep + "/favicon.ico") :
+            self.toInstall.append("./favicon.ico")
 
         for f in self.toInstall : 
             if os.path.isdir(f) :
                 log.print("Copying " + f + " to " + dest + os.sep + f, "yellow")
-                shutil.copytree(f, dest + os.sep + f, dirs_exist_ok=True)
+                shutil.copytree(f, dest + os.sep + f, dirs_exist_ok=True, symlinks=True, ignore_dangling_symlinks=True)
             else :
                 log.print("Copying " + f + " to " + dest + os.sep + f, "yellow")
                 if not os.path.isdir(ft.parent(dest + os.sep + f)) :
                     os.makedirs(ft.parent(dest + os.sep + f))
                 shutil.copy(f, dest + os.sep + f)
+
+        log.print("Installing " + str(len(self.app_pages)) + " pages...", "yellow")
+        for p in self.app_pages :
+            if p.opts["url"] == "/" : 
+                continue
+            fp = self.build_dir + os.sep + p.filepath()
+            if ft.ext(fp) != "" : 
+                fp = ft.parent(fp)
+            if not os.path.isdir(fp) :
+                log.print("The directory for page " + fp + " doesn't exist, can't install it.", "red")
+                continue
+            dst = dest + os.sep + fp.replace(self.build_dir, "")
+            log.print("Copying " + fp + " to " + dst, "yellow")
+            try : 
+                shutil.copytree(fp, dst, dirs_exist_ok=True, symlinks=True, ignore_dangling_symlinks=True)
+            except Exception as e :
+                log.print("Error during copy :" + str(e), "yellow") 
+
         log.print("installed.", "green")
 
     def addMissingOptsToPageOpts(self, opts) : 
@@ -695,7 +725,7 @@ self.addEventListener("fetch", (event) =>
             log.print(str(e), "red")
 
     def createRootFolderLinks(self, directory, level=1) : 
-        if not os.path.isdir(self.build_dir + directory) : 
+        if not os.path.isdir(self.build_dir + os.sep + directory) : 
             log.print(directory + " is not a directory, skipping.", "yellow")
             return
         if directory == self.build_dir : 
@@ -707,12 +737,19 @@ self.addEventListener("fetch", (event) =>
         if os.path.abspath(directory) == os.path.abspath(os.getcwd()) :
             log.print(directory + " is the current directory, skipping.", "yellow")
             return
+
+        for f in os.listdir(self.build_dir + os.sep + directory) :
+            if os.path.islink(self.build_dir + os.sep + directory + os.sep + f) :
+                log.print("Removing " + self.build_dir + os.sep + directory + os.sep + f, "yellow")
+                os.remove(self.build_dir + os.sep + directory + os.sep + f)
         
         prefix = ""
         for i in range(level) : 
             prefix += ".." + os.sep
 
         for f in self.root_folders : 
+            if not os.path.exists(self.build_dir + os.sep + f) :
+                continue
             log.print("Creating symlink " + prefix + f + " in " + self.build_dir + directory + os.sep + f, "yellow") 
             if not os.path.exists(self.build_dir + directory + os.sep + f) :
                 try : 
@@ -734,7 +771,7 @@ self.addEventListener("fetch", (event) =>
                 for k in p.missing_keys :
                     log.print("- " + k, "red")
                 continue
-            filepath = p.filepath(self.build_dir)
+            filepath = p.filepath()
             self.createRootFolderLinks(ft.parent(filepath), p.level())
             self.generateHtml(filepath, compiled, p.generatedMeta(self.global_organization), p.content, p.level())
         log.print("Pages generated", "green")

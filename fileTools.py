@@ -183,7 +183,7 @@ class File:
             return False
 
 #return reccurcive hierarchy of files as absolute path
-def hierarchie(root, includeDirs=True, filterDirs=[]):
+def hierarchie(root, includeDirs=True, filterDirs=[], ignoreSymlinkDirs=False):
     if root[-1] == "/":
         root = root[:-1]
     files = os.listdir(root)
@@ -193,8 +193,13 @@ def hierarchie(root, includeDirs=True, filterDirs=[]):
     while i < max:
         files[i] = root + os.sep + files[i]
         if os.path.isdir(files[i]):
+            if os.path.islink(files[i]) and ignoreSymlinkDirs:
+                files.pop(i)
+                max -= 1
+                i+=1
+                continue
             if os.path.basename(files[i]) not in filterDirs:
-                files += hierarchie(files[i], includeDirs, filterDirs)
+                files += hierarchie(files[i], includeDirs, filterDirs, ignoreSymlinkDirs)
 
         i += 1
 
