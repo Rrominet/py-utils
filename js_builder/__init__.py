@@ -10,9 +10,163 @@ import hashlib
 debug = 1
 release = 2
 
+class AppPage : 
+
+    #opts need to have at least the key "url" (from the root like /about /contact, etc)
+    #a key "title"
+    # and optional : 
+    #key "description"
+    #key "image"
+    #key "type" (article, website, etc...)
+    #key "datePublished" and "dateModified"
+#  "author": {
+#    "@type": "Person",
+#    "name": "Romain",
+#    "url": "https://motion-live.com/about"
+#  },
+#  "publisher": {
+#    "@type": "Organization",
+#    "name": "Motion Live",
+#    "logo": {
+#      "@type": "ImageObject",
+#      "url": "https://motion-live.com/img/logo.png"
+#    }
+#  },
+    #if missing_keys is not empty, none of the operation can be done and a error message via log module is printed.
+    def __init__(self, opts = {}, content="") : 
+        self.missing_keys = []
+
+        self.content = content
+        if "content" in opts and content == "" :
+            self.content = opts["content"]
+
+        log.print("Trying to read : " + self.content, "yellow")
+        if os.path.exists(self.content) : 
+            self.content = ft.read(self.content)
+        else : 
+            log.print("File " + self.content + " not found. Considered as pure text.", "yellow")
+
+        self._level = -1
+        if "url" not in opts:
+            self.missing_keys.append("url")
+        if "title" not in opts:
+            self.missing_keys.append("title")
+        if self.missing_keys:
+            log.print("AppPage missing keys : " + ", ".join(self.missing_keys), "red")
+        self.opts = opts
+
+    def filepath(self, root) : 
+        f = self.opts["url"]
+        if ft.ext(f) == "" : 
+            return f + "/index.html"
+        return f
+
+    def level(self) : 
+        if self._level == -1 : 
+            url = self.opts.get("url", "")
+            if url == "" :
+                return 0
+            url = url.replace("//", "/")
+            if url == "/" : 
+                self._level = 0
+            else : 
+                self._level = url.count("/")
+        return self._level
+
+    def levelPrefix(self) : 
+        prefix = "./"
+        for i in range(self._level) : 
+            prefix += "../"
+        return prefix
+
+    #this return the different meta tag needed for good sharing preview on social media like Facebook, Twitter, Discord, Line, What'sapp, etc
+    # it's generated from the opts
+    # it does the standars ones, the og ones and the twitter ones
+    # it return a full html string that would be an index.html for this page. With an empty body.
+    # use the log module to print messages
+    def generatedMeta(self, global_organization=None) : 
+        url = self.opts.get("url", "")
+        title = self.opts.get("title", "")
+        description = self.opts.get("description", "")
+        image = self.opts.get("image", "")
+        og_type = self.opts.get("type", "website")
+
+
+        log.print("Generating html for page : " + url, "yellow")
+
+        meta = ""
+        meta += "<meta charset=\"UTF-8\">\n"
+        meta += "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n"
+        meta += "<link rel=\"icon\" type=\"image/x-icon\" href=\"" + self.levelPrefix() + "favicon.ico\">\n"
+        if title:
+            meta += "<title>" + title + "</title>\n"
+            meta += "<meta name=\"title\" content=\"" + title + "\">\n"
+        if description:
+            meta += "<meta name=\"description\" content=\"" + description + "\">\n"
+
+        # og tags
+        meta += "<meta property=\"og:type\" content=\"" + og_type + "\">\n"
+        if url:
+            meta += "<meta property=\"og:url\" content=\"" + url + "\">\n"
+        if title:
+            meta += "<meta property=\"og:title\" content=\"" + title + "\">\n"
+        if description:
+            meta += "<meta property=\"og:description\" content=\"" + description + "\">\n"
+        if image:
+            meta += "<meta property=\"og:image\" content=\"" + image + "\">\n"
+
+        # twitter tags
+        meta += "<meta name=\"twitter:card\" content=\"summary_large_image\">\n"
+        if url:
+            meta += "<meta name=\"twitter:url\" content=\"" + url + "\">\n"
+        if title:
+            meta += "<meta name=\"twitter:title\" content=\"" + title + "\">\n"
+        if description:
+            meta += "<meta name=\"twitter:description\" content=\"" + description + "\">\n"
+        if image:
+            meta += "<meta name=\"twitter:image\" content=\"" + image + "\">\n"
+
+        json_type = self.opts.get("type", "Website")
+        json_type = json_type.capitalize()
+
+        json_ld = {}
+        json_ld["@context"] = "https://schema.org"
+        json_ld["@type"] = json_type
+        json_ld["url"] = url
+        json_ld["title"] = title
+        json_ld["name"] = title
+        json_ld["headline"] = title
+        json_ld["description"] = description
+
+        if "datePublished" in self.opts :
+            json_ld["datePublished"] = self.opts["datePublished"]
+        if "dateModified" in self.opts :
+            json_ld["dateModified"] = self.opts["dateModified"]
+
+        if "author" in self.opts :
+            json_ld["author"] = self.opts["author"]
+        if "publisher" in self.opts :
+            json_ld["publisher"] = self.opts["publisher"]
+
+        meta += "<script type=\"application/ld+json\">" + json.dumps(json_ld) + "</script>\n"
+        if global_organization :
+            global_organization["@context"] = "https://schema.org"
+            meta += "<script type=\"application/ld+json\">" + json.dumps(global_organization) + "</script>\n"
+
+        return meta
+
+    def priority(self) : 
+        return self.opts.get("priority", 0.5)
+
+    def changefreq(self) : 
+        return self.opts.get("changefreq", "monthly")
+
 class JsProject : 
-    def __init__(self, build_dir="") : 
+    def __init__(self, build_dir="", root_url="") : 
         self.type = debug
+        self.root_url = root_url
+        if self.root_url.endswith("/") : 
+            self.root_url = self.root_url[:-1]
         self._name = ""
         self._description = ""
         self.pwa = False
@@ -22,6 +176,20 @@ class JsProject :
 
         #add the files here you don't want to pwa to cache in advance
         self.nocache = []
+
+        #list of AppPage objects
+        self.app_pages = []
+        self.app_pages_errors = []
+
+        #list of root folder that gonna be linked in children apges
+        #if non-existent, ignored.
+        self.root_folders = ["js", "css", "images", "videos", "data", "fonts", "frameworks"]
+
+        #urls from the root with the first "/" !
+        self.disallowed_indexed = []
+
+        #for a root site that have more than one site map in subdirs
+        self.more_sitemaps = []
 
         if build_dir == "" : 
             self.build_dir = os.getcwd()
@@ -38,6 +206,10 @@ class JsProject :
         #need to set this 
         #relative to build_dir
         self.html_tpl = ""
+
+        self.global_author = None
+        self.global_publisher = None
+        self.global_organization = None
 
     def variable(self, name): 
         if(getattr(self, "_" + name) == "") :
@@ -243,14 +415,21 @@ class JsProject :
                         compiled["css"].append(j.replace(self.build_dir + os.sep, ""))
             log.print ("Debug mode : No compilation and write needed.", "yellow")
         
-        htmlfile = self.html_tpl.replace("_tpl", "")
-        log.print("Generating the html file " + htmlfile + "...", "green")
-        self.generateHtml(htmlfile, compiled)
-        log.print("Html file generated.", "green")
+        if len(self.app_pages) == 0 : 
+            htmlfile = self.html_tpl.replace("_tpl", "")
+            log.print("Generating the html file " + htmlfile + "...", "green")
+            self.generateHtml(htmlfile, compiled)
+            log.print("Html file generated.", "green")
+        else : 
+            self.generatePages(compiled)
+
         self.saveWrittenFiles()
         if self.pwa : 
             self.buildPWA(self.nocache)
 
+        self.generateRobotsTxt()
+        self.generateSitemap()
+        self.generateLlm()
         log.print("Done.", "green")
 
     def buildPWA(self, filesToNotCache=[]) :
@@ -397,7 +576,11 @@ self.addEventListener("fetch", (event) =>
         log.print("Service worker file generated : " + self.build_dir + os.sep + "sw.js", "green")
 
     #filepath once again is relative to build_dir
-    def generateHtml(self, filepath, compiled) :
+    def generateHtml(self, filepath, compiled, meta="", content="", level=0) :
+        prefix = "./"
+        for i in range(level) : 
+            prefix += "../"
+
         filepath = self.build_dir + os.sep + filepath
         htmls = ft.read(self. build_dir + os.sep + self.html_tpl)
         js = ""
@@ -408,26 +591,32 @@ self.addEventListener("fetch", (event) =>
         for j in compiled["js"] : 
             if not j : 
                 continue
-            js  += "<script src=\"" + j + "\" defer></script>"
+            js  += "<script src=\"" + prefix + j + "\" defer></script>"
             if self.type == debug : 
                 js += "\n"
 
         if self.pwa : 
-            css +=" <link rel='manifest' href='./manifest.json' />"
+            css +=" <link rel='manifest' href='" + prefix + "manifest.json' />"
 
         for c in compiled["css"] : 
             if not c : 
                 continue
-            css += "<link rel=\"stylesheet\" href=\"" + c + "\">"
+            css += "<link rel=\"stylesheet\" href=\"" + prefix + c + "\">"
             if self.type == debug : 
                 css += "\n"
 
         htmls = htmls.replace("*css*", css)
         htmls = htmls.replace("*js*", js)
+        htmls = htmls.replace("*meta*", meta)
+        htmls = htmls.replace("*content*", content)
+
+        if not os.path.isdir(ft.parent(filepath)) :
+            os.makedirs(ft.parent(filepath), exist_ok=True)
 
         ft.write(htmls, filepath)
         self.writtenFiles.append(filepath)
 
+    #TODO : install the pages of the project because it will be important.
     def install(self, dest) : 
         if not os.path.exists(dest) :
             raise Exception("No dest directory found. Can't install in : " + dest)
@@ -463,6 +652,11 @@ self.addEventListener("fetch", (event) =>
             self.toInstall.append("./manifest.json")
             self.toInstall.append("./sw.js")
             self.toInstall.append("./images/512.png")
+        if os.path.exists(self.build_dir + os.sep + "/robots.txt") :
+            self.toInstall.append("./robots.txt")
+        if os.path.exists(self.build_dir + os.sep + "/sitemap.xml") :
+            self.toInstall.append("./sitemap.xml")
+
         for f in self.toInstall : 
             if os.path.isdir(f) :
                 log.print("Copying " + f + " to " + dest + os.sep + f, "yellow")
@@ -474,8 +668,136 @@ self.addEventListener("fetch", (event) =>
                 shutil.copy(f, dest + os.sep + f)
         log.print("installed.", "green")
 
-def create(argv=[], build_dir="") : 
-    _r = JsProject(build_dir)
+    def addMissingOptsToPageOpts(self, opts) : 
+        if not "author" in opts and self.global_author :
+            opts["author"] = self.global_author
+        if not "publisher" in opts and self.global_publisher :
+            opts["publisher"] = self.global_publisher
+
+    def addPage(self, opts, content="") : 
+        self.addMissingOptsToPageOpts(opts)
+        self.app_pages.append(AppPage(opts, content))
+
+    #data is a json array
+    def createPagesFromData(self, data) : 
+        for p in data : 
+            self.addMissingOptsToPageOpts(p)
+            self.app_pages.append(AppPage(p))
+
+    def createPagesFromFile(self, filepath) : 
+        try: 
+            data = ft.read(filepath)
+            data = json.loads(data)
+            self.createPagesFromData(data)
+        except Exception as e : 
+            log.print("Couldn't create the pages from the filepath : " + filepath, "red")
+            log.print("More infos :", "red")
+            log.print(str(e), "red")
+
+    def createRootFolderLinks(self, directory, level=1) : 
+        if not os.path.isdir(self.build_dir + directory) : 
+            log.print(directory + " is not a directory, skipping.", "yellow")
+            return
+        if directory == self.build_dir : 
+            log.print(directory + " is the build directory, skipping.", "yellow")
+            return
+        if os.path.abspath(directory) == os.path.abspath(self.build_dir) :
+            log.print(directory + " is the build directory, skipping.", "yellow")
+            return
+        if os.path.abspath(directory) == os.path.abspath(os.getcwd()) :
+            log.print(directory + " is the current directory, skipping.", "yellow")
+            return
+        
+        prefix = ""
+        for i in range(level) : 
+            prefix += ".." + os.sep
+
+        for f in self.root_folders : 
+            log.print("Creating symlink " + prefix + f + " in " + self.build_dir + directory + os.sep + f, "yellow") 
+            if not os.path.exists(self.build_dir + directory + os.sep + f) :
+                try : 
+                    os.symlink(prefix + f, self.build_dir + directory + os.sep + f)
+                except Exception as e :
+                    log.print("Couldn't create the symlink " + prefix + f + " in " + self.build_dir + directory + os.sep + f, "red")
+                    log.print("More infos :", "red")
+                    log.print(str(e), "red")
+            else : 
+                log.print(directory + os.sep + f + " already exist, skipping.", "yellow")
+
+    def generatePages(self, compiled) : 
+        self.app_pages_errors = []
+        log.print("Generating pages...")
+        for p in self.app_pages : 
+            if len(p.missing_keys) > 0 : 
+                log.print("Error in generating page :", "red")
+                log.print("Missing keys :", "red")
+                for k in p.missing_keys :
+                    log.print("- " + k, "red")
+                continue
+            filepath = p.filepath(self.build_dir)
+            self.createRootFolderLinks(ft.parent(filepath), p.level())
+            self.generateHtml(filepath, compiled, p.generatedMeta(self.global_organization), p.content, p.level())
+        log.print("Pages generated", "green")
+
+    def generateRobotsTxt(self) : 
+        if self.root_url == "" :
+            log.print("root_url is empty, mendatory for robots.txt to be generated.", "red")
+
+        log.print("Generating robots.txt...")
+        txt = """User-agent: *
+"""
+        for forbid in self.disallowed_indexed : 
+            txt += "Disallow: " + forbid + "\n"
+        txt += """
+Allow: /
+Sitemap: """ + self.root_url + """/sitemap.xml"""
+        for sitemap in self.more_sitemaps : 
+            txt +="\nSitemap: " + self.root_url + "/" + sitemap + "\n"
+
+        log.print("robots.txt generated", "green")
+        ft.write(txt, self.build_dir + os.sep + "robots.txt")
+
+    def generateSitemap(self) : 
+        log.print("Generating sitemap.xml...", "yellow")
+        txt = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+        txt += "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n"
+        for p in self.app_pages :
+            txt += "<url>\n"
+            url = self.root_url + p.opts["url"]
+            url = url.replace("//", "/")
+            txt += "<loc>" + url + "</loc>\n"
+            txt += "<priority>" + str(float(p.priority())) + "</priority>\n"
+            txt += "<changefreq>" + p.changefreq() + "</changefreq>\n"
+            txt += "</url>\n"
+        txt += "</urlset>"
+        ft.write(txt, self.build_dir + os.sep + "sitemap.xml")
+        log.print("sitemap.xml generated", "green")
+
+    def indexPage(self) : 
+        for p in self.app_pages : 
+            if p.opts["url"] == "/" : 
+                return p
+        return None
+
+    def generateLlm(self) : 
+        log.print("Generating llm.txt...", "yellow")
+        indpge = self.indexPage()
+        if not indpge :
+            log.print("No index page found for llm.txt, skipping.", "yellow")
+            return
+        txt = "# " + indpge.opts["title"] + "\n\n"
+        txt += ">" + indpge.opts["description"] + "\n\n"
+        txt += "## Core Pages\n\n"
+        for p in self.app_pages : 
+            if p.opts["url"] == "/" : 
+                continue
+            txt += "- [" + p.opts["title"] + "](" + p.opts["url"] + ") " + p.opts["description"] + "\n"
+
+        ft.write(txt, self.build_dir + os.sep + "llm.txt")
+        log.print("llm.txt generated", "green")
+
+def create(argv=[], build_dir="", root_url="") : 
+    _r = JsProject(build_dir, root_url)
     if len(argv) > 0 :
         _r.setFromArgs(argv)
     return _r
