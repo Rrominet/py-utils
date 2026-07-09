@@ -505,6 +505,7 @@ class JsProject :
             if "index_tpl.html" in f : continue
             if "make" in f : continue
             if "llm.txt" in f : continue
+            if "llms.txt" in f : continue
             if "sitemap.xml" in f : continue
             if "robots.txt" in f : continue
             if "__pycache__" in f : continue
@@ -652,7 +653,7 @@ self.addEventListener("fetch", (event) =>
                 continue
             try :
                 log.print("Copying " + f + " to " + dest + os.sep + f.replace(self.build_dir + os.sep, ""), "yellow")
-                shutil.copy(f, dest + os.sep + f.replace(self.build_dir + os.sep, ""))
+                self.installFile(f, dest + os.sep + f.replace(self.build_dir + os.sep, ""))
             except : 
                 log.print("Error while copying " + f + " to " + dest + os.sep + f.replace(self.build_dir + os.sep, ""), "yellow")
 
@@ -664,20 +665,20 @@ self.addEventListener("fetch", (event) =>
             self.toInstall.append("./robots.txt")
         if os.path.exists(self.build_dir + os.sep + "/sitemap.xml") :
             self.toInstall.append("./sitemap.xml")
-        if os.path.exists(self.build_dir + os.sep + "/llm.txt") :
-            self.toInstall.append("./llm.txt")
+        if os.path.exists(self.build_dir + os.sep + "/llms.txt") :
+            self.toInstall.append("./llms.txt")
         if os.path.exists(self.build_dir + os.sep + "/favicon.ico") :
             self.toInstall.append("./favicon.ico")
 
         for f in self.toInstall : 
             if os.path.isdir(f) :
                 log.print("Copying " + f + " to " + dest + os.sep + f, "yellow")
-                shutil.copytree(f, dest + os.sep + f, dirs_exist_ok=True, symlinks=True, ignore_dangling_symlinks=True)
+                self.installDir(f, dest + os.sep + f)
             else :
                 log.print("Copying " + f + " to " + dest + os.sep + f, "yellow")
                 if not os.path.isdir(ft.parent(dest + os.sep + f)) :
                     os.makedirs(ft.parent(dest + os.sep + f))
-                shutil.copy(f, dest + os.sep + f)
+                self.installFile(f, dest + os.sep + f)
 
         log.print("Installing " + str(len(self.app_pages)) + " pages...", "yellow")
         for p in self.app_pages :
@@ -692,11 +693,40 @@ self.addEventListener("fetch", (event) =>
             dst = dest + os.sep + fp.replace(self.build_dir, "")
             log.print("Copying " + fp + " to " + dst, "yellow")
             try : 
-                shutil.copytree(fp, dst, dirs_exist_ok=True, symlinks=True, ignore_dangling_symlinks=True)
+                self.installDir(fp, dst)
             except Exception as e :
                 log.print("Error during copy :" + str(e), "yellow") 
 
         log.print("installed.", "green")
+
+    def installFile(self, src, dest) : 
+        if os.path.exists(src) and os.path.exists(dest) and os.path.getsize(src) == os.path.getsize(dest) :
+            return
+        shutil.copy(src, dest)
+
+    def installDir(self, src, dest) : 
+        if not os.path.exists(dest) :
+            os.makedirs(dest)
+        for root, dirs, files in os.walk(src) :
+            rel = root.replace(src, "")
+            if rel.startswith(os.sep) :
+                rel = rel[1:]
+            dest_root = dest if rel == "" else dest + os.sep + rel
+            if not os.path.exists(dest_root) :
+                os.makedirs(dest_root)
+            for f in files :
+                s = root + os.sep + f
+                d = dest_root + os.sep + f
+                if os.path.islink(s) :
+                    if os.path.exists(d) :
+                        continue
+                    try :
+                        linkto = os.readlink(s)
+                        os.symlink(linkto, d)
+                    except :
+                        pass
+                    continue
+                self.installFile(s, d)
 
     def addMissingOptsToPageOpts(self, opts) : 
         if not "author" in opts and self.global_author :
@@ -817,10 +847,13 @@ Sitemap: """ + self.root_url + """/sitemap.xml"""
         return None
 
     def generateLlm(self) : 
-        log.print("Generating llm.txt...", "yellow")
+        if os.path.exists(self.build_dir + os.sep + "llm.txt") :
+            os.remove(self.build_dir + os.sep + "llm.txt")
+
+        log.print("Generating llms.txt...", "yellow")
         indpge = self.indexPage()
         if not indpge :
-            log.print("No index page found for llm.txt, skipping.", "yellow")
+            log.print("No index page found for llms.txt, skipping.", "yellow")
             return
         txt = "# " + indpge.opts["title"] + "\n\n"
         txt += ">" + indpge.opts["description"] + "\n\n"
@@ -830,8 +863,8 @@ Sitemap: """ + self.root_url + """/sitemap.xml"""
                 continue
             txt += "- [" + p.opts["title"] + "](" + p.opts["url"] + ") " + p.opts["description"] + "\n"
 
-        ft.write(txt, self.build_dir + os.sep + "llm.txt")
-        log.print("llm.txt generated", "green")
+        ft.write(txt, self.build_dir + os.sep + "llms.txt")
+        log.print("llms.txt generated", "green")
 
 def create(argv=[], build_dir="", root_url="") : 
     _r = JsProject(build_dir, root_url)
