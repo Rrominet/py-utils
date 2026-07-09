@@ -621,7 +621,6 @@ self.addEventListener("fetch", (event) =>
         ft.write(htmls, filepath)
         self.writtenFiles.append(filepath)
 
-    #TODO : install the pages of the project because it will be important.
     def install(self, dest) : 
         if not os.path.exists(dest) :
             raise Exception("No dest directory found. Can't install in : " + dest)
@@ -691,7 +690,7 @@ self.addEventListener("fetch", (event) =>
                 log.print("The directory for page " + fp + " doesn't exist, can't install it.", "red")
                 continue
             dst = dest + os.sep + fp.replace(self.build_dir, "")
-            log.print("Copying " + fp + " to " + dst, "yellow")
+            log.print("Installing " + fp + " to " + dst, "yellow")
             try : 
                 self.installDir(fp, dst)
             except Exception as e :
@@ -702,6 +701,8 @@ self.addEventListener("fetch", (event) =>
     def installFile(self, src, dest) : 
         if os.path.exists(src) and os.path.exists(dest) and os.path.getsize(src) == os.path.getsize(dest) :
             return
+        if not os.path.isdir(ft.parent(dest)) :
+            os.makedirs(ft.parent(dest))
         shutil.copy(src, dest)
 
     def installDir(self, src, dest) : 
@@ -712,19 +713,26 @@ self.addEventListener("fetch", (event) =>
             if rel.startswith(os.sep) :
                 rel = rel[1:]
             dest_root = dest if rel == "" else dest + os.sep + rel
-            if not os.path.exists(dest_root) :
+            if not os.path.isdir(dest_root) :
                 os.makedirs(dest_root)
-            for f in files :
+            filesndirs = dirs + files
+            for f in filesndirs :
                 s = root + os.sep + f
                 d = dest_root + os.sep + f
+                log.print("Copying " + s + " to " + d, "yellow")
                 if os.path.islink(s) :
+                    log.print("Creating symlink " + s + " to " + d, "yellow")
                     if os.path.exists(d) :
+                        log.print("Symlink " + d + " already exists, skipping.", "yellow")
                         continue
                     try :
                         linkto = os.readlink(s)
                         os.symlink(linkto, d)
-                    except :
-                        pass
+                        log.print("Symlink created.", "green")
+                    except Exception as e :
+                        log.print("Error while creating symlink " + s + " to " + d + " : " + str(e), "red")
+                    continue
+                if os.path.isdir(s) :
                     continue
                 self.installFile(s, d)
 
