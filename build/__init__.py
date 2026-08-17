@@ -298,7 +298,7 @@ class Project :
             if dep_mtime is None :
                 log.print("Rebuilding: dependency disappeared: " + dep + " -- (" + src + ")", "yellow")
                 return True
-            if dep_mtime > obj_mtime :
+            if dep_mtime > obj_mtime and "_gen.h" not in dep :
                 log.print("Rebuilding: dependency changed: " + dep + " -- (" + src + ")", "yellow")
                 return True
 
