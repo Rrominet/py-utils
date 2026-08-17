@@ -652,7 +652,7 @@ self.addEventListener("fetch", (event) =>
                 continue
             try :
                 log.print("Copying " + f + " to " + dest + os.sep + f.replace(self.build_dir + os.sep, ""), "yellow")
-                self.installFile(f, dest + os.sep + f.replace(self.build_dir + os.sep, ""))
+                self.installFile(f, dest + os.sep + f.replace(self.build_dir + os.sep, ""), True)
             except : 
                 log.print("Error while copying " + f + " to " + dest + os.sep + f.replace(self.build_dir + os.sep, ""), "yellow")
 
@@ -690,6 +690,12 @@ self.addEventListener("fetch", (event) =>
                 log.print("The directory for page " + fp + " doesn't exist, can't install it.", "red")
                 continue
             dst = dest + os.sep + fp.replace(self.build_dir, "")
+            indexfile = dst + os.sep + "index.html"
+            if os.path.exists(indexfile) :
+                log.print("Removing " + indexfile, "yellow")
+                os.remove(indexfile)
+            else : 
+                log.print ("Index file " + indexfile + " doesn't exist, skipping.", "yellow")
             log.print("Installing " + fp + " to " + dst, "yellow")
             try : 
                 self.installDir(fp, dst)
@@ -698,11 +704,15 @@ self.addEventListener("fetch", (event) =>
 
         log.print("installed.", "green")
 
-    def installFile(self, src, dest) : 
-        if os.path.exists(src) and os.path.exists(dest) and os.path.getsize(src) == os.path.getsize(dest) :
-            return
+    def installFile(self, src, dest, force=False) : 
         if not os.path.isdir(ft.parent(dest)) :
             os.makedirs(ft.parent(dest))
+        
+        if force: 
+            shutil.copy(src, dest)
+            return
+        if os.path.exists(src) and os.path.exists(dest) and os.path.getsize(src) == os.path.getsize(dest) :
+            return
         shutil.copy(src, dest)
 
     def installDir(self, src, dest) : 

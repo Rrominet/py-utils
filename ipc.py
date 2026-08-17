@@ -1,10 +1,11 @@
 import json
 import sys
+import subprocess
 import threading
 import queue
 import traceback
 from typing import Callable, Dict, Any
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 #this framework is useed when stuff is sended to the stdin
@@ -18,13 +19,44 @@ _registers: Dict[str, Callable] = {}
 @dataclass
 class Process:
     callbacks: list
-    write: Callable
+    proc: Any = None
 
     def addOnOutput(self, callback):
         self.callbacks.append(callback)
 
     def onOutput(self):
         return self.callbacks
+
+    def write(self, string):
+        self.proc.stdin.write(string + "\n")
+        self.proc.stdin.flush()
+
+    def wait(self) : 
+        self.proc.wait()
+
+def createProcess(filepath: str) -> Process:
+    proc = subprocess.Popen(
+        [filepath],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        text=True,
+        bufsize=1,
+    )
+    process = Process(callbacks=[], proc=proc)
+
+    def readStdout():
+        while True:
+            line = proc.stdout.readline()
+            if line:
+                line = line.strip()
+                for cb in process.onOutput():
+                    cb(line)
+            else:
+                break
+
+    thread = threading.Thread(target=readStdout, daemon=True)
+    thread.start()
+    return process
 
 def reqId():
     global _reqId
@@ -35,24 +67,26 @@ def addToResponse(process: Process, idArg: int, callback: Callable):
     idx = len(process.onOutput())
 
     def wrapper(line: str):
+        j = None
         try:
             j = json.loads(line)
-            if j["id"] == idArg:
-                callback(j)
-                # Disable this callback after firing
-                process.onOutput()[idx] = lambda x: None
         except Exception as e:
             print(f"Cannot parse line for ipc response: {line}", file=sys.stderr)
             print(str(e), file=sys.stderr)
+
+        if j["id"] == idArg:
+            callback(j)
+            # Disable this callback after firing
+            process.onOutput()[idx] = lambda x: None
 
     process.addOnOutput(wrapper)
 
 def send(process: Process, data: dict, callback: Callable = None):
     toSend = data.copy()
     toSend["id"] = reqId()
-    process.write(json.dumps(toSend))
     if callback:
         addToResponse(process, toSend["id"], callback)
+    process.write(json.dumps(toSend))
 
 def call(process: Process, function: str, args: dict, callback: Callable = None):
     toSend = {
@@ -140,3 +174,19 @@ def success(toReturn: dict):
 # the caller is not doned yet because the Process class is not implemented fully. 
 #reg("hello", lambda x: {"message": "Hello " + x["name"]})
 #receive()
+
+#sender example : 
+#proc_path = "/your/proc/path"
+#pc = ipc.createProcess(proc_path)
+#
+#def cb(data) : 
+#    if data["success"] == False : 
+#        print ("Error", data["error"])
+#    else : 
+#        print ("Received", data["data"])
+#
+#ipc.call(pc, "test", {}, cb)
+#ipc.call(pc, "fail", {}, cb)
+
+#Here the child process id call receive, will never end unless you define a function that can kill it.
+#pc.wait()
