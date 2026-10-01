@@ -118,12 +118,12 @@ def onStdinLine():
         try:
             received = json.loads(line)
         except Exception as e:
-            return
+            print(json.dumps({"success": False, "error": "Coudn't parse JSON : " + str(e)}), flush=True)
 
         try:
             funcName = received["function"]
         except KeyError:
-            return
+            print(json.dumps({"success": False, "error": "Key 'function' missing."}), flush=True)
 
         with _registersLock:
             if funcName in _registers:
@@ -147,7 +147,11 @@ def receive():
     while True:
         line = sys.stdin.readline()
         if line:
-            onStdinLine()(line.strip())
+            try : 
+                onStdinLine()(line.strip())
+            except : 
+                print ("Error while processing line: " + line, file=sys.stderr)
+                pass
         else : 
             break
 

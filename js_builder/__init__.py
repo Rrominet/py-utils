@@ -485,7 +485,16 @@ class JsProject :
         log.print("Manifest generated.", "green")
 
     def getPWACacheFiles(self, filesToNotCache=[]) : 
-        print(filesToNotCache)
+        if self.type == release : 
+            for f in self.js : 
+                for k in f : 
+                    for j in f[k] :
+                        filesToNotCache.append(j.replace(self.build_dir + os.sep, ""))
+            for f in self.css : 
+                for k in f : 
+                    for j in f[k] :
+                        filesToNotCache.append(j.replace(self.build_dir + os.sep, ""))
+
         files = ["./"]
         tmp_files = ft.hierarchie(os.path.abspath(self.build_dir), True, [], True)
         for f in tmp_files:
@@ -528,7 +537,8 @@ class JsProject :
                 continue
             f = f.replace(os.path.abspath(".") + os.sep, "")
             f = f.replace(os.sep, "/")
-            files.append(f)
+            if f not in files : 
+                files.append(f)
         r = "["
         for f in files : 
             r += "\"" + f.replace("\"", "\\\"") + "\",\n"

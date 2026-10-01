@@ -84,3 +84,53 @@ def listen_async() :
 
 #listen on a separate thread async :
 #   listen_async()
+
+
+
+# mendatory keys : id, type, 
+def post_event(opts={}) :
+    return send_http("post-event", opts)
+
+# mendatory keys : message, 
+def progress(opts={}) :
+    return send_http("progress", opts)
+
+# mendatory keys : message, 
+def work(opts={}) :
+    return send_http("work", opts)
+
+# mendatory keys : prop-type, message, prop-name, 
+def ask(opts={}) :
+    return callback_call("ask", opts)
+
+# mendatory keys : id, 
+def set_dialog(opts={}) :
+    return send_http("set-dialog", opts)
+
+# mendatory keys : id, 
+def destroy_window(opts={}) :
+    return send_http("destroy-window", opts)
+
+# mendatory keys : message, 
+def confirm(opts={}) :
+    return send_http("confirm", opts)
+
+# mendatory keys : message, 
+def error(opts={}) :
+    return send_http("error", opts)
+
+# mendatory keys : message, 
+def warning(opts={}) :
+    return send_http("warning", opts)
+
+# mendatory keys : message, 
+def infos(opts={}) :
+    return send_http("infos", opts)
+
+# mendatory keys : message, 
+def message(opts={}) :
+    return send_http("message", opts)
+
+# mendatory keys : 
+def demo(opts={}) :
+    return send_http("demo", opts)
