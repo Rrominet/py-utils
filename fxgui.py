@@ -5,6 +5,7 @@ port = 10000
 
 import requests
 import json
+import sys
 
 def send_http(cmd, data):
     _r = {}
@@ -71,6 +72,40 @@ def listen() :
                         if l["id"] == "" or l["id"] == data["id"] : 
                             l["callback"](data)
 
+def listen_for_id(id) : 
+    full_url = f"{url}:{port}/sse"
+    with requests.get(full_url, stream=True, headers=headers) as resp:
+        resp.raise_for_status()
+        buffer = []
+        event_type = "message"
+        event_id = None
+
+        for raw_line in resp.iter_lines(chunk_size=1, decode_unicode=True, delimiter="\n"):
+            if raw_line is None:   # keep-alive
+                continue
+            line = raw_line.strip()
+            print("got some data from sse : " + line)
+            if line.startswith("data:") : 
+                try : 
+                    data = json.loads(line[5:])
+                    if id == data["id"] :
+                        return data
+                except : 
+                    print("Error while parsing the event", file=sys.stderr)
+
+def callback_call(cmd, opts) : 
+    res = send_http(cmd, opts)
+    if "success" not in res : 
+        print ("No success", file=sys.stderr)
+        return res
+    if "data" in res : 
+        res = res["data"]
+        if "id" in res : 
+            return listen_for_id(res["id"])
+        else : 
+            print ("No id", file=sys.stderr)
+    return res
+
 #The listeners callbacks will never be called on the mainthread.
 def listen_async() : 
     import threading
@@ -88,48 +123,58 @@ def listen_async() :
 
 
 # mendatory keys : id, type, 
-def post_event(opts={}) :
-    return send_http("post-event", opts)
+def post_event(opts={}, modal=True) :
+    if (modal) : return callback_call("post-event", opts)
+    else : return send_http("post-event", opts)
 
 # mendatory keys : message, 
-def progress(opts={}) :
-    return send_http("progress", opts)
+def progress(opts={}, modal=False) :
+    if (modal) : return callback_call("progress", opts)
+    else : return send_http("progress", opts)
 
 # mendatory keys : message, 
-def work(opts={}) :
-    return send_http("work", opts)
+def work(opts={}, modal=True) :
+    if (modal) : return callback_call("work", opts)
+    else : return send_http("work", opts)
 
 # mendatory keys : prop-type, message, prop-name, 
 def ask(opts={}) :
     return callback_call("ask", opts)
 
 # mendatory keys : id, 
-def set_dialog(opts={}) :
-    return send_http("set-dialog", opts)
+def set_dialog(opts={}, modal=True) :
+    if (modal) : return callback_call("set-dialog", opts)
+    else : return send_http("set-dialog", opts)
 
 # mendatory keys : id, 
-def destroy_window(opts={}) :
-    return send_http("destroy-window", opts)
+def destroy_window(opts={}, modal=True) :
+    if (modal) : return callback_call("destroy-window", opts)
+    else : return send_http("destroy-window", opts)
 
 # mendatory keys : message, 
-def confirm(opts={}) :
-    return send_http("confirm", opts)
+def confirm(opts={}, modal=True) :
+    if (modal) : return callback_call("confirm", opts)
+    else : return send_http("confirm", opts)
 
 # mendatory keys : message, 
-def error(opts={}) :
-    return send_http("error", opts)
+def error(opts={}, modal=True) :
+    if (modal) : return callback_call("error", opts)
+    else : return send_http("error", opts)
 
 # mendatory keys : message, 
-def warning(opts={}) :
-    return send_http("warning", opts)
+def warning(opts={}, modal=True) :
+    if (modal) : return callback_call("warning", opts)
+    else : return send_http("warning", opts)
 
 # mendatory keys : message, 
-def infos(opts={}) :
-    return send_http("infos", opts)
+def infos(opts={}, modal=True) :
+    if (modal) : return callback_call("infos", opts)
+    else : return send_http("infos", opts)
 
 # mendatory keys : message, 
-def message(opts={}) :
-    return send_http("message", opts)
+def message(opts={}, modal=True) :
+    if (modal) : return callback_call("message", opts)
+    else : return send_http("message", opts)
 
 # mendatory keys : 
 def demo(opts={}) :

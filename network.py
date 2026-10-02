@@ -1,4 +1,5 @@
 import sys 
+import subprocess
 v=sys.version_info.major
 if v == 3 : 
     import urllib
@@ -108,4 +109,19 @@ def post(url, data={}, headers={}, format="utf-8", isJson=True) :
         print (e.code)
         print (e.headers)
         return None
+
+def ping(host):
+    try:
+        result = subprocess.run(
+            ["ping", "-c", "1", host],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=30
+        )
+
+        return result.returncode == 0
+
+    except subprocess.TimeoutExpired:
+        return False
+    return False
 

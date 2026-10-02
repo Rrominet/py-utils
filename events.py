@@ -3,6 +3,9 @@ import json
 import time as t
 import random
 import datetime
+from ml import fxgui
+from ml import telegram
+from ml import fileTools as ft
 
 events_root_dir = "/opt/events/data"
 
@@ -13,9 +16,23 @@ THIS_MONTH = 3
 CHECK_IF_TIME = 4
 URGENT = NOW
 
+def error(event_name, event_parent, message) : 
+    d = {
+            "title" : "Error with the event " + event_name,
+            "message" : "The event " + event_name + " with parent " + event_parent + "\nfailed with the message : " + message
+            }
+    fxgui.error(d, False)
+
+
 def write(name, parent="", time=-1, description="", data=None,
-          changes_keys=None, changes_conditions=None,
+          changes_keys=None, changes_conditions=[],
           urgency=CHECK_IF_TIME):
+
+    if (type(changes_keys) == str) : 
+        changes_keys = [changes_keys]
+    if (type(changes_conditions) != list) : 
+        changes_conditions = [changes_conditions]
+
     if data is None:
         data = {}
 
@@ -29,6 +46,7 @@ def write(name, parent="", time=-1, description="", data=None,
         root = os.path.join(events_root_dir, "events")
         os.makedirs(root, exist_ok=True)
     except Exception as error:
+        error(name, parent, "Failed to create root directory : " + str(error))
         return {"success": False, "message": str(error)}
 
     if time == -1:
@@ -55,6 +73,7 @@ def write(name, parent="", time=-1, description="", data=None,
     previous_events = []
     if os.path.isdir(parent_dir):
         for current_root, dirs, files in os.walk(parent_dir):
+            files.sort(reverse=True)
             for file_name in files:
                 try:
                     with open(os.path.join(current_root, file_name), "r") as file:
@@ -62,34 +81,36 @@ def write(name, parent="", time=-1, description="", data=None,
                 except Exception:
                     pass
 
-    for previous_event in previous_events:
-        matches = True
+    matches = True
+    if (len(previous_events) > 0) and len(changes_keys) > 0 :
+        for previous_event in previous_events:
+            if previous_event.get("name") != name or previous_event.get("parent") != parent:
+                continue
+            for key in changes_keys:
+                if key in event:
+                    current_value = event.get(key)
+                    previous_value = previous_event.get(key)
+                else:
+                    current_value = event.get("data", {}).get(key)
+                    previous_value = previous_event.get("data", {}).get(key)
 
-        for key in changes_keys:
-            if key in event:
-                current_value = event.get(key)
-                previous_value = previous_event.get(key)
-            else:
-                current_value = event.get("data", {}).get(key)
-                previous_value = previous_event.get("data", {}).get(key)
+                if str(current_value) != str(previous_value):
+                    matches = False
+                    break
 
-            if current_value != previous_value:
-                matches = False
-                break
+            #should break no matter what once we have found matching name event
+            break
+    else : 
+        matches = False
 
-        if matches and changes_keys:
-            return {"success": True, "message": ""}
-
-        for condition in changes_conditions:
-            if condition(previous_event, event):
-                return {"success": True, "message": ""}
-
-    try:
-        os.makedirs(date_dir, exist_ok=True)
-        with open(os.path.join(date_dir, event["id"]), "w") as file:
-            json.dump(event, file)
-    except Exception as error:
-        return {"success": False, "message": str(error)}
+    if not matches : 
+        try:
+            os.makedirs(date_dir, exist_ok=True)
+            with open(os.path.join(date_dir, event["id"]), "w") as file:
+                json.dump(event, file)
+        except Exception as error:
+            error(name, parent, "Failed to write the event on disk :\nFilepath: " + os.path.join(date_dir, event["id"]) + "\n" + str(error))
+            return {"success": False, "message": str(error)}
 
     return {"success": True, "message": ""}
 
@@ -187,8 +208,10 @@ def consume(id):
                 return {"success": True, "message": ""}
 
     except Exception as error:
+        error(name, parent, "Failed to write back the event on disk :\nFilepath: " + file_path + "\n" + str(error))
         return {"success": False, "message": str(error)}
 
+    error(name, parent, "Event " + id + " not found.")
     return {"success": False, "message": "Event not found"}
 
 def consumeFromParent(parent):
@@ -257,5 +280,25 @@ def consumeFromUrgency(urgency):
         consumed = consume(event.get("id"))
         if not consumed.get("success"):
             return consumed
+
+    return {"success": True, "message": ""}
+
+
+def notification_urgent() : 
+    b = telegram.Bot(ft.read("/media/romain/Donnees/Programmation/Python/service-watcher/monitor-id"))
+    res = read(urgency=URGENT)
+    evets = []
+    if (res["success"]) : 
+        events = res["data"]
+    else : 
+        fxgui.error({"message" : "Could not read urgent events:\n " + res["message"], "title" : "Error in Notificaitons read"})
+    for e in events : 
+        title = "Urgent event fired !"
+        message = "Name : " + e.get("name") + "\nDescription : " + e.get("description")
+        message += "\n\n"
+        message += json.dumps(e.get("data"), indent=4)
+        consume(e.get("id"))
+        fxgui.infos({"title" : title, "message" : message}, False)
+        b.sendMessage("7257058845", "Urgent Event Fired !\n\n" + message)
 
     return {"success": True, "message": ""}
