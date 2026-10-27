@@ -784,8 +784,12 @@ self.addEventListener("fetch", (event) =>
 
     def createRootFolderLinks(self, directory, level=1) : 
         if not os.path.isdir(self.build_dir + os.sep + directory) : 
-            log.print(directory + " is not a directory, skipping.", "yellow")
-            return
+            try : 
+                log.print(directory + " is not a directory, trying to create it...", "yellow")
+                os.makedirs(self.build_dir + os.sep + directory)
+            except : 
+                log.print(directory + " : Can't create the directory", "red")
+                return
         if directory == self.build_dir : 
             log.print(directory + " is the build directory, skipping.", "yellow")
             return
